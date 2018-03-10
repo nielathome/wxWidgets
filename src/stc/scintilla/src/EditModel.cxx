@@ -30,6 +30,7 @@
 #include "Partitioning.h"
 #include "RunStyles.h"
 #include "ContractionState.h"
+#include "CContractionState.h"
 #include "CellBuffer.h"
 #include "KeyMap.h"
 #include "Indicator.h"
@@ -54,6 +55,8 @@ Caret::Caret() :
 	active(false), on(false), period(500) {}
 
 EditModel::EditModel() {
+	SetCs();
+
 	inOverstrike = false;
 	xOffset = 0;
 	trackLineWidth = false;
@@ -76,4 +79,20 @@ EditModel::EditModel() {
 EditModel::~EditModel() {
 	pdoc->Release();
 	pdoc = 0;
+
+	if( currentcs )
+		intrusive_ptr_release( currentcs );
+}
+
+void EditModel::SetCs( VContractionState * newcs ) {
+	if( currentcs )
+		intrusive_ptr_release( currentcs );
+
+	if( newcs == nullptr )
+	{
+		currentcs = new ContractionState;
+		intrusive_ptr_add_ref( currentcs );
+	}
+	else
+		currentcs = newcs;
 }

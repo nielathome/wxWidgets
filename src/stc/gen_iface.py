@@ -837,10 +837,10 @@ methodOverrideMap = {
 
     'CreateDocument' :
     (0,
-     'void* %s();',
-     '''void* %s() {
-         return (void*)SendMsg(%s);'''
-    ),
+     'void* %s(void* docContents);',
+     '''void* %s(void* docContents) {
+         return (void*)SendMsg(%s, 0, (sptr_t)docContents);''',
+     0),
 
     'AddRefDocument' :
     (0,

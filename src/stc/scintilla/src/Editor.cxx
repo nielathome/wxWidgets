@@ -337,7 +337,7 @@ int Editor::LinesToScroll() const {
 int Editor::MaxScrollPos() const {
 	//Platform::DebugPrintf("Lines %d screen = %d maxScroll = %d\n",
 	//LinesTotal(), LinesOnScreen(), LinesTotal() - LinesOnScreen() + 1);
-	int retVal = cs.LinesDisplayed();
+	int retVal = cs().LinesDisplayed();
 	if (endAtLastLine) {
 		retVal -= LinesOnScreen();
 	} else {
@@ -426,7 +426,7 @@ int Editor::PositionFromLineX(int lineDoc, int x) {
 }
 
 int Editor::LineFromLocation(Point pt) const {
-	return cs.DocFromDisplay(static_cast<int>(pt.y) / vs.lineHeight + topLine);
+	return cs().DocFromDisplay(static_cast<int>(pt.y) / vs.lineHeight + topLine);
 }
 
 void Editor::SetTopLine(int topLineNew) {
@@ -434,7 +434,7 @@ void Editor::SetTopLine(int topLineNew) {
 		topLine = topLineNew;
 		ContainerNeedsUpdate(SC_UPDATE_V_SCROLL);
 	}
-	posTopLine = pdoc->LineStart(cs.DocFromDisplay(topLine));
+	posTopLine = pdoc->LineStart(cs().DocFromDisplay(topLine));
 }
 
 /**
@@ -526,8 +526,8 @@ void Editor::RedrawSelMargin(int line, bool allAfter) {
 }
 
 PRectangle Editor::RectangleFromRange(Range r, int overlap) {
-	const int minLine = cs.DisplayFromDoc(pdoc->LineFromPosition(r.First()));
-	const int maxLine = cs.DisplayLastFromDoc(pdoc->LineFromPosition(r.Last()));
+	const int minLine = cs().DisplayFromDoc(pdoc->LineFromPosition(r.First()));
+	const int maxLine = cs().DisplayLastFromDoc(pdoc->LineFromPosition(r.Last()));
 	const PRectangle rcClientDrawing = GetClientDrawingRectangle();
 	PRectangle rc;
 	const int leftTextOverlap = ((xOffset == 0) && (vs.leftMarginWidth > 0)) ? 1 : 0;
@@ -879,17 +879,17 @@ SelectionPosition Editor::MovePositionSoVisible(SelectionPosition pos, int moveD
 	pos = ClampPositionIntoDocument(pos);
 	pos = MovePositionOutsideChar(pos, moveDir);
 	int lineDoc = pdoc->LineFromPosition(pos.Position());
-	if (cs.GetVisible(lineDoc)) {
+	if (cs().GetVisible(lineDoc)) {
 		return pos;
 	} else {
-		int lineDisplay = cs.DisplayFromDoc(lineDoc);
+		int lineDisplay = cs().DisplayFromDoc(lineDoc);
 		if (moveDir > 0) {
 			// lineDisplay is already line before fold as lines in fold use display line of line after fold
-			lineDisplay = Platform::Clamp(lineDisplay, 0, cs.LinesDisplayed());
-			return SelectionPosition(pdoc->LineStart(cs.DocFromDisplay(lineDisplay)));
+			lineDisplay = Platform::Clamp(lineDisplay, 0, cs().LinesDisplayed());
+			return SelectionPosition(pdoc->LineStart(cs().DocFromDisplay(lineDisplay)));
 		} else {
-			lineDisplay = Platform::Clamp(lineDisplay - 1, 0, cs.LinesDisplayed());
-			return SelectionPosition(pdoc->LineEnd(cs.DocFromDisplay(lineDisplay)));
+			lineDisplay = Platform::Clamp(lineDisplay - 1, 0, cs().LinesDisplayed());
+			return SelectionPosition(pdoc->LineEnd(cs().DocFromDisplay(lineDisplay)));
 		}
 	}
 }
@@ -960,7 +960,7 @@ void Editor::HorizontalScrollTo(int xPos) {
 
 void Editor::VerticalCentreCaret() {
 	int lineDoc = pdoc->LineFromPosition(sel.IsRectangular() ? sel.Rectangular().caret.Position() : sel.MainCaret());
-	int lineDisplay = cs.DisplayFromDoc(lineDoc);
+	int lineDisplay = cs().DisplayFromDoc(lineDoc);
 	int newTop = lineDisplay - (LinesOnScreen() / 2);
 	if (topLine != newTop) {
 		SetTopLine(newTop > 0 ? newTop : 0);
@@ -1467,7 +1467,7 @@ bool Editor::WrapOneLine(Surface *surface, int lineToWrap) {
 		view.LayoutLine(*this, lineToWrap, surface, vs, ll, wrapWidth);
 		linesWrapped = ll->lines;
 	}
-	return cs.SetHeight(lineToWrap, linesWrapped +
+	return cs().SetHeight(lineToWrap, linesWrapped +
 		(vs.annotationVisible ? pdoc->AnnotationLines(lineToWrap) : 0));
 }
 
@@ -1483,7 +1483,7 @@ bool Editor::WrapLines(enum wrapScope ws) {
 		if (wrapWidth != LineLayout::wrapWidthInfinite) {
 			wrapWidth = LineLayout::wrapWidthInfinite;
 			for (int lineDoc = 0; lineDoc < pdoc->LinesTotal(); lineDoc++) {
-				cs.SetHeight(lineDoc, 1 +
+				cs().SetHeight(lineDoc, 1 +
 					(vs.annotationVisible ? pdoc->AnnotationLines(lineDoc) : 0));
 			}
 			wrapOccurred = true;
@@ -1499,8 +1499,8 @@ bool Editor::WrapLines(enum wrapScope ws) {
 		// Decide where to start wrapping
 		int lineToWrap = wrapPending.start;
 		int lineToWrapEnd = std::min(wrapPending.end, pdoc->LinesTotal());
-		const int lineDocTop = cs.DocFromDisplay(topLine);
-		const int subLineTop = topLine - cs.DisplayFromDoc(lineDocTop);
+		const int lineDocTop = cs().DocFromDisplay(topLine);
+		const int subLineTop = topLine - cs().DisplayFromDoc(lineDocTop);
 		if (ws == wsVisible) {
 			lineToWrap = Platform::Clamp(lineDocTop-5, wrapPending.start, pdoc->LinesTotal());
 			// Priority wrap to just after visible area.
@@ -1508,8 +1508,8 @@ bool Editor::WrapLines(enum wrapScope ws) {
 			// as taking only one display line.
 			lineToWrapEnd = lineDocTop;
 			int lines = LinesOnScreen() + 1;
-			while ((lineToWrapEnd < cs.LinesInDoc()) && (lines>0)) {
-				if (cs.GetVisible(lineToWrapEnd))
+			while ((lineToWrapEnd < cs().LinesInDoc()) && (lines>0)) {
+				if (cs().GetVisible(lineToWrapEnd))
 					lines--;
 				lineToWrapEnd++;
 			}
@@ -1546,7 +1546,7 @@ bool Editor::WrapLines(enum wrapScope ws) {
 					lineToWrap++;
 				}
 
-				goodTopLine = cs.DisplayFromDoc(lineDocTop) + std::min(subLineTop, cs.GetHeight(lineDocTop)-1);
+				goodTopLine = cs().DisplayFromDoc(lineDocTop) + std::min(subLineTop, cs().GetHeight(lineDocTop)-1);
 			}
 		}
 
@@ -1701,6 +1701,9 @@ void Editor::Paint(Surface *surfaceWindow, PRectangle rcArea) {
 
 	StyleAreaBounded(rcArea, false);
 
+	// tell virtual formatters that we're about to draw a view
+	pdoc->Notify_StartDrawView();
+
 	PRectangle rcClient = GetClientRectangle();
 	//Platform::DebugPrintf("Client: (%3d,%3d) ... (%3d,%3d)   %d\n",
 	//	rcClient.left, rcClient.top, rcClient.right, rcClient.bottom);
@@ -1750,7 +1753,7 @@ void Editor::Paint(Surface *surfaceWindow, PRectangle rcArea) {
 			if (paintAbandonedByStyling) {
 				// Styling has spilled over a line end, such as occurs by starting a multiline
 				// comment. The width of subsequent text may have changed, so rewrap.
-				NeedWrapping(cs.DocFromDisplay(topLine));
+				NeedWrapping(cs().DocFromDisplay(topLine));
 			}
 		}
 		return;
@@ -2084,7 +2087,7 @@ void Editor::ClearAll() {
 			pdoc->DeleteChars(0, pdoc->Length());
 		}
 		if (!pdoc->IsReadOnly()) {
-			cs.Clear();
+			cs().Clear();
 			pdoc->AnnotationClearAll();
 			pdoc->MarginClearAll();
 		}
@@ -2111,7 +2114,7 @@ void Editor::ClearDocumentStyle() {
 	}
 	pdoc->StartStyling(0, '\377');
 	pdoc->SetStyleFor(pdoc->Length(), 0);
-	cs.ShowAll();
+	cs().ShowAll();
 	SetAnnotationHeights(0, pdoc->LinesTotal());
 	pdoc->ClearLevels();
 }
@@ -2603,7 +2606,7 @@ void Editor::NotifyModified(Document *, DocModification mh, void *) {
 			braces[0] = MovePositionForDeletion(braces[0], mh.position, mh.length);
 			braces[1] = MovePositionForDeletion(braces[1], mh.position, mh.length);
 		}
-		if ((mh.modificationType & (SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE)) && cs.HiddenLines()) {
+		if ((mh.modificationType & (SC_MOD_BEFOREINSERT | SC_MOD_BEFOREDELETE)) && cs().HiddenLines()) {
 			// Some lines are hidden so may need shown.
 			const int lineOfPos = pdoc->LineFromPosition(mh.position);
 			int endNeedShown = mh.position;
@@ -2631,16 +2634,16 @@ void Editor::NotifyModified(Document *, DocModification mh, void *) {
 			if (mh.position > pdoc->LineStart(lineOfPos))
 				lineOfPos++;	// Affecting subsequent lines
 			if (mh.linesAdded > 0) {
-				cs.InsertLines(lineOfPos, mh.linesAdded);
+				cs().InsertLines(lineOfPos, mh.linesAdded);
 			} else {
-				cs.DeleteLines(lineOfPos, -mh.linesAdded);
+				cs().DeleteLines(lineOfPos, -mh.linesAdded);
 			}
 			view.LinesAddedOrRemoved(lineOfPos, mh.linesAdded);
 		}
 		if (mh.modificationType & SC_MOD_CHANGEANNOTATION) {
 			int lineDoc = pdoc->LineFromPosition(mh.position);
 			if (vs.annotationVisible) {
-				cs.SetHeight(lineDoc, cs.GetHeight(lineDoc) + mh.annotationLinesAdded);
+				cs().SetHeight(lineDoc, cs().GetHeight(lineDoc) + mh.annotationLinesAdded);
 				Redraw();
 			}
 		}
@@ -3072,11 +3075,11 @@ SelectionPosition Editor::PositionUpOrDown(SelectionPosition spStart, int direct
 		const int subLine = static_cast<int>(pt.y - ptStartLine.y) / vs.lineHeight;
 
 		if (direction < 0 && subLine == 0) {
-			const int lineDisplay = cs.DisplayFromDoc(lineDoc);
+			const int lineDisplay = cs().DisplayFromDoc(lineDoc);
 			if (lineDisplay > 0) {
-				skipLines = pdoc->AnnotationLines(cs.DocFromDisplay(lineDisplay - 1));
+				skipLines = pdoc->AnnotationLines(cs().DocFromDisplay(lineDisplay - 1));
 			}
-		} else if (direction > 0 && subLine >= (cs.GetHeight(lineDoc) - 1 - pdoc->AnnotationLines(lineDoc))) {
+		} else if (direction > 0 && subLine >= (cs().GetHeight(lineDoc) - 1 - pdoc->AnnotationLines(lineDoc))) {
 			skipLines = pdoc->AnnotationLines(lineDoc);
 		}
 	}
@@ -3156,14 +3159,14 @@ void Editor::ParaUpOrDown(int direction, Selection::selTypes selt) {
 		MovePositionTo(SelectionPosition(direction > 0 ? pdoc->ParaDown(sel.MainCaret()) : pdoc->ParaUp(sel.MainCaret())), selt);
 		lineDoc = pdoc->LineFromPosition(sel.MainCaret());
 		if (direction > 0) {
-			if (sel.MainCaret() >= pdoc->Length() && !cs.GetVisible(lineDoc)) {
+			if (sel.MainCaret() >= pdoc->Length() && !cs().GetVisible(lineDoc)) {
 				if (selt == Selection::noSel) {
 					MovePositionTo(SelectionPosition(pdoc->LineEndPosition(savedPos)));
 				}
 				break;
 			}
 		}
-	} while (!cs.GetVisible(lineDoc));
+	} while (!cs().GetVisible(lineDoc));
 }
 
 Range Editor::RangeDisplayLine(int lineVisible) {
@@ -5022,8 +5025,8 @@ int Editor::PositionAfterArea(PRectangle rcArea) const {
 	// This often means that the line after a modification is restyled which helps
 	// detect multiline comment additions and heals single line comments
 	int lineAfter = TopLineOfMain() + static_cast<int>(rcArea.bottom - 1) / vs.lineHeight + 1;
-	if (lineAfter < cs.LinesDisplayed())
-		return pdoc->LineStart(cs.DocFromDisplay(lineAfter) + 1);
+	if (lineAfter < cs().LinesDisplayed())
+		return pdoc->LineStart(cs().DocFromDisplay(lineAfter) + 1);
 	else
 		return pdoc->Length();
 }
@@ -5193,7 +5196,7 @@ void Editor::SetAnnotationHeights(int start, int end) {
 					linesWrapped = ll->lines;
 				}
 			}
-			if (cs.SetHeight(line, pdoc->AnnotationLines(line) + linesWrapped))
+			if (cs().SetHeight(line, pdoc->AnnotationLines(line) + linesWrapped))
 				changedHeight = true;
 		}
 		if (changedHeight) {
@@ -5226,9 +5229,14 @@ void Editor::SetDocPointer(Document *document) {
 	SetRepresentations();
 
 	// Reset the contraction state to fully shown.
-	cs.Clear();
-	cs.InsertLines(0, pdoc->LinesTotal() - 1);
-	SetAnnotationHeights(0, pdoc->LinesTotal());
+	VContractionState * vcs{ pdoc->GetContractionState() };
+	const bool docManagedCs{ vcs != nullptr };
+	SetCs( vcs );
+	if( !docManagedCs )
+	{
+		cs().InsertLines( 0, pdoc->LinesTotal() - 1 );
+		SetAnnotationHeights( 0, pdoc->LinesTotal() );
+	}
 	view.llc.Deallocate();
 	NeedWrapping();
 
@@ -5251,7 +5259,7 @@ void Editor::SetAnnotationVisible(int visible) {
 			for (int line=0; line<pdoc->LinesTotal(); line++) {
 				int annotationLines = pdoc->AnnotationLines(line);
 				if (annotationLines > 0) {
-					cs.SetHeight(line, cs.GetHeight(line) + annotationLines * dir);
+					cs().SetHeight(line, cs().GetHeight(line) + annotationLines * dir);
 				}
 			}
 		}
@@ -5266,10 +5274,10 @@ int Editor::ExpandLine(int line) {
 	int lineMaxSubord = pdoc->GetLastChild(line);
 	line++;
 	while (line <= lineMaxSubord) {
-		cs.SetVisible(line, line, true);
+		cs().SetVisible(line, line, true);
 		int level = pdoc->GetLevel(line);
 		if (level & SC_FOLDLEVELHEADERFLAG) {
-			if (cs.GetExpanded(line)) {
+			if (cs().GetExpanded(line)) {
 				line = ExpandLine(line);
 			} else {
 				line = pdoc->GetLastChild(line);
@@ -5281,7 +5289,7 @@ int Editor::ExpandLine(int line) {
 }
 
 void Editor::SetFoldExpanded(int lineDoc, bool expanded) {
-	if (cs.SetExpanded(lineDoc, expanded)) {
+	if (cs().SetExpanded(lineDoc, expanded)) {
 		RedrawSelMargin();
 	}
 }
@@ -5294,14 +5302,14 @@ void Editor::FoldLine(int line, int action) {
 				if (line < 0)
 					return;
 			}
-			action = (cs.GetExpanded(line)) ? SC_FOLDACTION_CONTRACT : SC_FOLDACTION_EXPAND;
+			action = (cs().GetExpanded(line)) ? SC_FOLDACTION_CONTRACT : SC_FOLDACTION_EXPAND;
 		}
 
 		if (action == SC_FOLDACTION_CONTRACT) {
 			int lineMaxSubord = pdoc->GetLastChild(line);
 			if (lineMaxSubord > line) {
-				cs.SetExpanded(line, 0);
-				cs.SetVisible(line + 1, lineMaxSubord, false);
+				cs().SetExpanded(line, 0);
+				cs().SetVisible(line + 1, lineMaxSubord, false);
 
 				int lineCurrent = pdoc->LineFromPosition(sel.MainCaret());
 				if (lineCurrent > line && lineCurrent <= lineMaxSubord) {
@@ -5311,11 +5319,11 @@ void Editor::FoldLine(int line, int action) {
 			}
 
 		} else {
-			if (!(cs.GetVisible(line))) {
+			if (!(cs().GetVisible(line))) {
 				EnsureLineVisible(line, false);
 				GoToLine(line);
 			}
-			cs.SetExpanded(line, 1);
+			cs().SetExpanded(line, 1);
 			ExpandLine(line);
 		}
 
@@ -5327,18 +5335,18 @@ void Editor::FoldLine(int line, int action) {
 void Editor::FoldExpand(int line, int action, int level) {
 	bool expanding = action == SC_FOLDACTION_EXPAND;
 	if (action == SC_FOLDACTION_TOGGLE) {
-		expanding = !cs.GetExpanded(line);
+		expanding = !cs().GetExpanded(line);
 	}
 	// Ensure child lines lexed and fold information extracted before
 	// flipping the state.
 	pdoc->GetLastChild(line, LevelNumber(level));
 	SetFoldExpanded(line, expanding);
-	if (expanding && (cs.HiddenLines() == 0))
+	if (expanding && (cs().HiddenLines() == 0))
 		// Nothing to do
 		return;
 	int lineMaxSubord = pdoc->GetLastChild(line, LevelNumber(level));
 	line++;
-	cs.SetVisible(line, lineMaxSubord, expanding);
+	cs().SetVisible(line, lineMaxSubord, expanding);
 	while (line <= lineMaxSubord) {
 		int levelLine = pdoc->GetLevel(line);
 		if (levelLine & SC_FOLDLEVELHEADERFLAG) {
@@ -5352,9 +5360,9 @@ void Editor::FoldExpand(int line, int action, int level) {
 
 int Editor::ContractedFoldNext(int lineStart) const {
 	for (int line = lineStart; line<pdoc->LinesTotal();) {
-		if (!cs.GetExpanded(line) && (pdoc->GetLevel(line) & SC_FOLDLEVELHEADERFLAG))
+		if (!cs().GetExpanded(line) && (pdoc->GetLevel(line) & SC_FOLDLEVELHEADERFLAG))
 			return line;
-		line = cs.ContractedNext(line+1);
+		line = cs().ContractedNext(line+1);
 		if (line < 0)
 			return -1;
 	}
@@ -5372,7 +5380,7 @@ void Editor::EnsureLineVisible(int lineDoc, bool enforcePolicy) {
 	if (lineDoc >= wrapPending.start)
 		WrapLines(wsAll);
 
-	if (!cs.GetVisible(lineDoc)) {
+	if (!cs().GetVisible(lineDoc)) {
 		// Back up to find a non-blank line
 		int lookLine = lineDoc;
 		int lookLineLevel = pdoc->GetLevel(lookLine);
@@ -5387,8 +5395,8 @@ void Editor::EnsureLineVisible(int lineDoc, bool enforcePolicy) {
 		if (lineParent >= 0) {
 			if (lineDoc != lineParent)
 				EnsureLineVisible(lineParent, enforcePolicy);
-			if (!cs.GetExpanded(lineParent)) {
-				cs.SetExpanded(lineParent, 1);
+			if (!cs().GetExpanded(lineParent)) {
+				cs().SetExpanded(lineParent, 1);
 				ExpandLine(lineParent);
 			}
 		}
@@ -5396,7 +5404,7 @@ void Editor::EnsureLineVisible(int lineDoc, bool enforcePolicy) {
 		Redraw();
 	}
 	if (enforcePolicy) {
-		int lineDisplay = cs.DisplayFromDoc(lineDoc);
+		int lineDisplay = cs().DisplayFromDoc(lineDoc);
 		if (visiblePolicy & VISIBLE_SLOP) {
 			if ((topLine > lineDisplay) || ((visiblePolicy & VISIBLE_STRICT) && (topLine + visibleSlop > lineDisplay))) {
 				SetTopLine(Platform::Clamp(lineDisplay - visibleSlop, 0, MaxScrollPos()));
@@ -5426,13 +5434,13 @@ void Editor::FoldAll(int action) {
 		// Discover current state
 		for (int lineSeek = 0; lineSeek < maxLine; lineSeek++) {
 			if (pdoc->GetLevel(lineSeek) & SC_FOLDLEVELHEADERFLAG) {
-				expanding = !cs.GetExpanded(lineSeek);
+				expanding = !cs().GetExpanded(lineSeek);
 				break;
 			}
 		}
 	}
 	if (expanding) {
-		cs.SetVisible(0, maxLine-1, true);
+		cs().SetVisible(0, maxLine-1, true);
 		for (int line = 0; line < maxLine; line++) {
 			int levelLine = pdoc->GetLevel(line);
 			if (levelLine & SC_FOLDLEVELHEADERFLAG) {
@@ -5447,7 +5455,7 @@ void Editor::FoldAll(int action) {
 				SetFoldExpanded(line, false);
 				int lineMaxSubord = pdoc->GetLastChild(line, -1);
 				if (lineMaxSubord > line) {
-					cs.SetVisible(line + 1, lineMaxSubord, false);
+					cs().SetVisible(line + 1, lineMaxSubord, false);
 				}
 			}
 		}
@@ -5460,7 +5468,7 @@ void Editor::FoldChanged(int line, int levelNow, int levelPrev) {
 	if (levelNow & SC_FOLDLEVELHEADERFLAG) {
 		if (!(levelPrev & SC_FOLDLEVELHEADERFLAG)) {
 			// Adding a fold point.
-			if (cs.SetExpanded(line, true)) {
+			if (cs().SetExpanded(line, true)) {
 				RedrawSelMargin();
 			}
 			FoldExpand(line, SC_FOLDACTION_EXPAND, levelPrev);
@@ -5470,13 +5478,13 @@ void Editor::FoldChanged(int line, int levelNow, int levelPrev) {
 		const int prevLineLevel = pdoc->GetLevel(prevLine);
 
 		// Combining two blocks where the first block is collapsed (e.g. by deleting the line(s) which separate(s) the two blocks)
-		if ((LevelNumber(prevLineLevel) == LevelNumber(levelNow)) && !cs.GetVisible(prevLine))
+		if ((LevelNumber(prevLineLevel) == LevelNumber(levelNow)) && !cs().GetVisible(prevLine))
 			FoldLine(pdoc->GetFoldParent(prevLine), SC_FOLDACTION_EXPAND);
 
-		if (!cs.GetExpanded(line)) {
+		if (!cs().GetExpanded(line)) {
 			// Removing the fold from one that has been contracted so should expand
 			// otherwise lines are left invisible with no way to make them visible
-			if (cs.SetExpanded(line, true)) {
+			if (cs().SetExpanded(line, true)) {
 				RedrawSelMargin();
 			}
 			// Combining two blocks where the second one is collapsed (e.g. by adding characters in the line which separates the two blocks)
@@ -5485,11 +5493,11 @@ void Editor::FoldChanged(int line, int levelNow, int levelPrev) {
 	}
 	if (!(levelNow & SC_FOLDLEVELWHITEFLAG) &&
 	        (LevelNumber(levelPrev) > LevelNumber(levelNow))) {
-		if (cs.HiddenLines()) {
+		if (cs().HiddenLines()) {
 			// See if should still be hidden
 			int parentLine = pdoc->GetFoldParent(line);
-			if ((parentLine < 0) || (cs.GetExpanded(parentLine) && cs.GetVisible(parentLine))) {
-				cs.SetVisible(line, line, true);
+			if ((parentLine < 0) || (cs().GetExpanded(parentLine) && cs().GetVisible(parentLine))) {
+				cs().SetVisible(line, line, true);
 				SetScrollBars();
 				Redraw();
 			}
@@ -5498,9 +5506,9 @@ void Editor::FoldChanged(int line, int levelNow, int levelPrev) {
 
 	// Combining two blocks where the first one is collapsed (e.g. by adding characters in the line which separates the two blocks)
 	if (!(levelNow & SC_FOLDLEVELWHITEFLAG) && (LevelNumber(levelPrev) < LevelNumber(levelNow))) {
-		if (cs.HiddenLines()) {
+		if (cs().HiddenLines()) {
 			const int parentLine = pdoc->GetFoldParent(line);
-			if (!cs.GetExpanded(parentLine) && cs.GetExpanded(line))
+			if (!cs().GetExpanded(parentLine) && cs().GetExpanded(line))
 				FoldLine(parentLine, SC_FOLDACTION_EXPAND);
 		}
 	}
@@ -6412,8 +6420,8 @@ sptr_t Editor::WndProc(unsigned int iMessage, uptr_t wParam, sptr_t lParam) {
 
 	case SCI_SETLINEENDTYPESALLOWED:
 		if (pdoc->SetLineEndTypesAllowed(static_cast<int>(wParam))) {
-			cs.Clear();
-			cs.InsertLines(0, pdoc->LinesTotal() - 1);
+			cs().Clear();
+			cs().InsertLines(0, pdoc->LinesTotal() - 1);
 			SetAnnotationHeights(0, pdoc->LinesTotal());
 			InvalidateStyleRedraw();
 		}
@@ -6751,8 +6759,8 @@ sptr_t Editor::WndProc(unsigned int iMessage, uptr_t wParam, sptr_t lParam) {
 	case SCI_SETCODEPAGE:
 		if (ValidCodePage(static_cast<int>(wParam))) {
 			if (pdoc->SetDBCSCodePage(static_cast<int>(wParam))) {
-				cs.Clear();
-				cs.InsertLines(0, pdoc->LinesTotal() - 1);
+				cs().Clear();
+				cs().InsertLines(0, pdoc->LinesTotal() - 1);
 				SetAnnotationHeights(0, pdoc->LinesTotal());
 				InvalidateStyleRedraw();
 				SetRepresentations();
@@ -7051,10 +7059,10 @@ sptr_t Editor::WndProc(unsigned int iMessage, uptr_t wParam, sptr_t lParam) {
 		// Folding messages
 
 	case SCI_VISIBLEFROMDOCLINE:
-		return cs.DisplayFromDoc(static_cast<int>(wParam));
+		return cs().DisplayFromDoc(static_cast<int>(wParam));
 
 	case SCI_DOCLINEFROMVISIBLE:
-		return cs.DocFromDisplay(static_cast<int>(wParam));
+		return cs().DocFromDisplay(static_cast<int>(wParam));
 
 	case SCI_WRAPCOUNT:
 		return WrapCount(static_cast<int>(wParam));
@@ -7076,30 +7084,30 @@ sptr_t Editor::WndProc(unsigned int iMessage, uptr_t wParam, sptr_t lParam) {
 		return pdoc->GetFoldParent(static_cast<int>(wParam));
 
 	case SCI_SHOWLINES:
-		cs.SetVisible(static_cast<int>(wParam), static_cast<int>(lParam), true);
+		cs().SetVisible(static_cast<int>(wParam), static_cast<int>(lParam), true);
 		SetScrollBars();
 		Redraw();
 		break;
 
 	case SCI_HIDELINES:
 		if (wParam > 0)
-			cs.SetVisible(static_cast<int>(wParam), static_cast<int>(lParam), false);
+			cs().SetVisible(static_cast<int>(wParam), static_cast<int>(lParam), false);
 		SetScrollBars();
 		Redraw();
 		break;
 
 	case SCI_GETLINEVISIBLE:
-		return cs.GetVisible(static_cast<int>(wParam));
+		return cs().GetVisible(static_cast<int>(wParam));
 
 	case SCI_GETALLLINESVISIBLE:
-		return cs.HiddenLines() ? 0 : 1;
+		return cs().HiddenLines() ? 0 : 1;
 
 	case SCI_SETFOLDEXPANDED:
 		SetFoldExpanded(static_cast<int>(wParam), lParam != 0);
 		break;
 
 	case SCI_GETFOLDEXPANDED:
-		return cs.GetExpanded(static_cast<int>(wParam));
+		return cs().GetExpanded(static_cast<int>(wParam));
 
 	case SCI_SETAUTOMATICFOLD:
 		foldAutomatic = static_cast<int>(wParam);
@@ -7114,7 +7122,7 @@ sptr_t Editor::WndProc(unsigned int iMessage, uptr_t wParam, sptr_t lParam) {
 		break;
 
 	case SCI_TOGGLEFOLDSHOWTEXT:
-		cs.SetFoldDisplayText(static_cast<int>(wParam), CharPtrFromSPtr(lParam));
+		cs().SetFoldDisplayText(static_cast<int>(wParam), CharPtrFromSPtr(lParam));
 		FoldLine(static_cast<int>(wParam), SC_FOLDACTION_TOGGLE);
 		break;
 
@@ -7564,7 +7572,9 @@ sptr_t Editor::WndProc(unsigned int iMessage, uptr_t wParam, sptr_t lParam) {
 		return 0;
 
 	case SCI_CREATEDOCUMENT: {
-			Document *doc = new Document();
+			content_ptr_t content{ reinterpret_cast<content_ptr_t>(lParam) };
+			intrusive_ptr_add_ref( content );
+			Document *doc = new Document( content );
 			doc->AddRef();
 			return reinterpret_cast<sptr_t>(doc);
 		}

@@ -46,7 +46,12 @@ public:
 
 	int foldFlags;
 	int foldDisplayTextStyle;
-	ContractionState cs;
+	VContractionState &cs() const {
+		return *currentcs;
+	}
+	void SetCs( VContractionState * newcs = nullptr );
+	VContractionState *currentcs{ nullptr };
+
 	// Hotspot support
 	Range hotspot;
 	int hoverIndicatorPos;

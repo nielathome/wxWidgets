@@ -338,6 +338,7 @@ WXSCINTILLA_OBJECTS =  \
 	$(OBJS)\wxscintilla_ContractionState.obj \
 	$(OBJS)\wxscintilla_Decoration.obj \
 	$(OBJS)\wxscintilla_Document.obj \
+	$(OBJS)\wxscintilla_VContent.obj \
 	$(OBJS)\wxscintilla_EditModel.obj \
 	$(OBJS)\wxscintilla_EditView.obj \
 	$(OBJS)\wxscintilla_Editor.obj \
@@ -7065,6 +7066,9 @@ $(OBJS)\wxscintilla_Decoration.obj: ..\..\src\stc\scintilla\src\Decoration.cxx
 
 $(OBJS)\wxscintilla_Document.obj: ..\..\src\stc\scintilla\src\Document.cxx
 	$(CXX) /c /nologo /TP /Fo$@ $(WXSCINTILLA_CXXFLAGS) ..\..\src\stc\scintilla\src\Document.cxx
+
+$(OBJS)\wxscintilla_VContent.obj: ..\..\src\stc\scintilla\src\VContent.cxx
+	$(CXX) /c /nologo /TP /Fo$@ $(WXSCINTILLA_CXXFLAGS) ..\..\src\stc\scintilla\src\VContent.cxx
 
 $(OBJS)\wxscintilla_EditModel.obj: ..\..\src\stc\scintilla\src\EditModel.cxx
 	$(CXX) /c /nologo /TP /Fo$@ $(WXSCINTILLA_CXXFLAGS) ..\..\src\stc\scintilla\src\EditModel.cxx

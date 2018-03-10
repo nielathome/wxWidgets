@@ -12,121 +12,71 @@
 namespace Scintilla {
 #endif
 
-/**
- * This holds the marker identifier and the marker type to display.
- * MarkerHandleNumbers are members of lists.
- */
-struct MarkerHandleNumber {
-	int handle;
-	int number;
-	MarkerHandleNumber *next;
-};
-
-/**
- * A marker handle set contains any number of MarkerHandleNumbers.
- */
-class MarkerHandleSet {
-	MarkerHandleNumber *root;
-
-public:
-	MarkerHandleSet();
-	~MarkerHandleSet();
-	int Length() const;
-	int MarkValue() const;	///< Bit set of marker numbers.
-	bool Contains(int handle) const;
-	bool InsertHandle(int handle, int markerNum);
-	void RemoveHandle(int handle);
-	bool RemoveNumber(int markerNum, bool all);
-	void CombineWith(MarkerHandleSet *other);
-};
-
-class LineMarkers : public PerLine {
-	SplitVector<MarkerHandleSet *> markers;
-	/// Handles are allocated sequentially and should never have to be reused as 32 bit ints are very big.
-	int handleCurrent;
-public:
-	LineMarkers() : handleCurrent(0) {
+class VLineMarkers : public PerLine, public VLifeTime {
+protected:
+	void Release( void ) override {
+		delete this;
 	}
-	virtual ~LineMarkers();
-	virtual void Init();
-	virtual void InsertLine(int line);
-	virtual void RemoveLine(int line);
 
-	int MarkValue(int line);
-	int MarkerNext(int lineStart, int mask) const;
-	int AddMark(int line, int marker, int lines);
-	void MergeMarkers(int pos);
-	bool DeleteMark(int line, int markerNum, bool all);
-	void DeleteMarkFromHandle(int markerHandle);
-	int LineFromHandle(int markerHandle);
+public:
+	virtual int MarkValue(int line) = 0;
+	virtual int MarkerNext(int lineStart, int mask) const = 0;
+	virtual int AddMark(int line, int marker, int lines) = 0;
+	virtual void MergeMarkers(int pos) = 0;
+	virtual bool DeleteMark(int line, int markerNum, bool all) = 0;
+	virtual void DeleteMarkFromHandle(int markerHandle) = 0;
+	virtual int LineFromHandle(int markerHandle) = 0;
 };
 
-class LineLevels : public PerLine {
-	SplitVector<int> levels;
-public:
-	virtual ~LineLevels();
-	virtual void Init();
-	virtual void InsertLine(int line);
-	virtual void RemoveLine(int line);
-
-	void ExpandLevels(int sizeNew=-1);
-	void ClearLevels();
-	int SetLevel(int line, int level, int lines);
-	int GetLevel(int line) const;
-};
-
-class LineState : public PerLine {
-	SplitVector<int> lineStates;
-public:
-	LineState() {
+class VLineLevels : public PerLine, public VLifeTime {
+protected:
+	void Release( void ) override {
+		delete this;
 	}
-	virtual ~LineState();
-	virtual void Init();
-	virtual void InsertLine(int line);
-	virtual void RemoveLine(int line);
 
-	int SetLineState(int line, int state);
-	int GetLineState(int line);
-	int GetMaxLineState() const;
+public:
+	virtual void ExpandLevels(int sizeNew=-1) = 0;
+	virtual void ClearLevels() = 0;
+	virtual int SetLevel(int line, int level, int lines) = 0;
+	virtual int GetLevel(int line) const = 0;
 };
 
-class LineAnnotation : public PerLine {
-	SplitVector<char *> annotations;
-public:
-	LineAnnotation() {
+class VLineState : public PerLine, public VLifeTime {
+protected:
+	void Release( void ) override {
+		delete this;
 	}
-	virtual ~LineAnnotation();
-	virtual void Init();
-	virtual void InsertLine(int line);
-	virtual void RemoveLine(int line);
 
-	bool MultipleStyles(int line) const;
-	int Style(int line) const;
-	const char *Text(int line) const;
-	const unsigned char *Styles(int line) const;
-	void SetText(int line, const char *text);
-	void ClearAll();
-	void SetStyle(int line, int style);
-	void SetStyles(int line, const unsigned char *styles);
-	int Length(int line) const;
-	int Lines(int line) const;
+public:
+	virtual int SetLineState(int line, int state) = 0;
+	virtual int GetLineState(int line) = 0;
+	virtual int GetMaxLineState() const = 0;
 };
 
-typedef std::vector<int> TabstopList;
-
-class LineTabstops : public PerLine {
-	SplitVector<TabstopList *> tabstops;
-public:
-	LineTabstops() {
+class VLineAnnotation : public PerLine, public VLifeTime {
+protected:
+	void Release( void ) override {
+		delete this;
 	}
-	virtual ~LineTabstops();
-	virtual void Init();
-	virtual void InsertLine(int line);
-	virtual void RemoveLine(int line);
 
-	bool ClearTabstops(int line);
-	bool AddTabstop(int line, int x);
-	int GetNextTabstop(int line, int x) const;
+public:
+	virtual bool MultipleStyles(int line) const = 0;
+	virtual int Style(int line) const = 0;
+	virtual const char *Text(int line) const = 0;
+	virtual const unsigned char *Styles(int line) const = 0;
+	virtual void SetText(int line, const char *text) = 0;
+	virtual void ClearAll() = 0;
+	virtual void SetStyle(int line, int style) = 0;
+	virtual void SetStyles(int line, const unsigned char *styles) = 0;
+	virtual int Length(int line) const = 0;
+	virtual int Lines(int line) const = 0;
+};
+
+class VLineTabstops : public PerLine {
+public:
+	virtual bool ClearTabstops(int line) = 0;
+	virtual bool AddTabstop(int line, int x) = 0;
+	virtual int GetNextTabstop(int line, int x) const = 0;
 };
 
 #ifdef SCI_NAMESPACE

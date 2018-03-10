@@ -33,6 +33,7 @@
 #include "ContractionState.h"
 #include "CellBuffer.h"
 #include "PerLine.h"
+#include "CPerLine.h"
 #include "KeyMap.h"
 #include "Indicator.h"
 #include "XPM.h"
@@ -612,7 +613,7 @@ Point EditView::LocationFromPosition(Surface *surface, const EditModel &model, S
 		lineDoc--;
 		posLineStart = model.pdoc->LineStart(lineDoc);
 	}
-	const int lineVisible = model.cs.DisplayFromDoc(lineDoc);
+	const int lineVisible = model.cs().DisplayFromDoc(lineDoc);
 	AutoLineLayout ll(llc, RetrieveLineLayout(lineDoc, model));
 	if (surface && ll) {
 		LayoutLine(model, lineDoc, surface, vs, ll, model.wrapWidth);
@@ -630,12 +631,12 @@ Range EditView::RangeDisplayLine(Surface *surface, const EditModel &model, int l
 	if (lineVisible < 0) {
 		return rangeSubLine;
 	}
-	const int lineDoc = model.cs.DocFromDisplay(lineVisible);
+	const int lineDoc = model.cs().DocFromDisplay(lineVisible);
 	const int positionLineStart = model.pdoc->LineStart(lineDoc);
 	AutoLineLayout ll(llc, RetrieveLineLayout(lineDoc, model));
 	if (surface && ll) {
 		LayoutLine(model, lineDoc, surface, vs, ll, model.wrapWidth);
-		const int lineStartSet = model.cs.DisplayFromDoc(lineDoc);
+		const int lineStartSet = model.cs().DisplayFromDoc(lineDoc);
 		const int subLine = lineVisible - lineStartSet;
 		if (subLine < ll->lines) {
 			rangeSubLine = ll->SubLineRange(subLine);
@@ -655,7 +656,7 @@ SelectionPosition EditView::SPositionFromLocation(Surface *surface, const EditMo
 	int visibleLine = static_cast<int>(floor(pt.y / vs.lineHeight));
 	if (!canReturnInvalid && (visibleLine < 0))
 		visibleLine = 0;
-	const int lineDoc = model.cs.DocFromDisplay(visibleLine);
+	const int lineDoc = model.cs().DocFromDisplay(visibleLine);
 	if (canReturnInvalid && (lineDoc < 0))
 		return SelectionPosition(INVALID_POSITION);
 	if (lineDoc >= model.pdoc->LinesTotal())
@@ -664,7 +665,7 @@ SelectionPosition EditView::SPositionFromLocation(Surface *surface, const EditMo
 	AutoLineLayout ll(llc, RetrieveLineLayout(lineDoc, model));
 	if (surface && ll) {
 		LayoutLine(model, lineDoc, surface, vs, ll, model.wrapWidth);
-		const int lineStartSet = model.cs.DisplayFromDoc(lineDoc);
+		const int lineStartSet = model.cs().DisplayFromDoc(lineDoc);
 		const int subLine = visibleLine - lineStartSet;
 		if (subLine < ll->lines) {
 			const Range rangeSubLine = ll->SubLineRange(subLine);
@@ -721,7 +722,7 @@ SelectionPosition EditView::SPositionFromLineX(Surface *surface, const EditModel
 
 int EditView::DisplayFromPosition(Surface *surface, const EditModel &model, int pos, const ViewStyle &vs) {
 	int lineDoc = model.pdoc->LineFromPosition(pos);
-	int lineDisplay = model.cs.DisplayFromDoc(lineDoc);
+	int lineDisplay = model.cs().DisplayFromDoc(lineDoc);
 	AutoLineLayout ll(llc, RetrieveLineLayout(lineDoc, model));
 	if (surface && ll) {
 		LayoutLine(model, lineDoc, surface, vs, ll, model.wrapWidth);
@@ -954,7 +955,7 @@ void EditView::DrawEOL(Surface *surface, const EditModel &model, const ViewStyle
 		rcSegment.left = rcLine.left;
 	rcSegment.right = rcLine.right;
 
-	bool fillRemainder = !lastSubLine || model.foldDisplayTextStyle == SC_FOLDDISPLAYTEXT_HIDDEN || !model.cs.GetFoldDisplayTextShown(line);
+	bool fillRemainder = !lastSubLine || model.foldDisplayTextStyle == SC_FOLDDISPLAYTEXT_HIDDEN || !model.cs().GetFoldDisplayTextShown(line);
 	if (fillRemainder) {
 		// Fill the remainder of the line
 		FillLineRemainder(surface, model, vsDraw, ll, line, rcSegment, subLine);
@@ -1068,11 +1069,11 @@ void EditView::DrawFoldDisplayText(Surface *surface, const EditModel &model, con
 	if (!lastSubLine)
 		return;
 
-	if ((model.foldDisplayTextStyle == SC_FOLDDISPLAYTEXT_HIDDEN) || !model.cs.GetFoldDisplayTextShown(line))
+	if ((model.foldDisplayTextStyle == SC_FOLDDISPLAYTEXT_HIDDEN) || !model.cs().GetFoldDisplayTextShown(line))
 		return;
 
 	PRectangle rcSegment = rcLine;
-	const char *foldDisplayText = model.cs.GetFoldDisplayText(line);
+	const char *foldDisplayText = model.cs().GetFoldDisplayText(line);
 	const int lengthFoldDisplayText = static_cast<int>(strlen(foldDisplayText));
 	FontAlias fontText = vsDraw.styles[STYLE_FOLDDISPLAYTEXT].font;
 	const int widthFoldDisplayText = static_cast<int>(surface->WidthText(fontText, foldDisplayText, lengthFoldDisplayText));
@@ -1881,7 +1882,7 @@ void EditView::DrawLine(Surface *surface, const EditModel &model, const ViewStyl
 }
 
 static void DrawFoldLines(Surface *surface, const EditModel &model, const ViewStyle &vsDraw, int line, PRectangle rcLine) {
-	bool expanded = model.cs.GetExpanded(line);
+	bool expanded = model.cs().GetExpanded(line);
 	const int level = model.pdoc->GetLevel(line);
 	const int levelNext = model.pdoc->GetLevel(line + 1);
 	if ((level & SC_FOLDLEVELHEADERFLAG) &&
@@ -1973,13 +1974,16 @@ void EditView::PaintText(Surface *surfaceWindow, const EditModel &model, PRectan
 				ypos += screenLinePaintFirst * vsDraw.lineHeight;
 			int yposScreen = screenLinePaintFirst * vsDraw.lineHeight;
 			int visibleLine = model.TopLineOfMain() + screenLinePaintFirst;
-			while (visibleLine < model.cs.LinesDisplayed() && yposScreen < rcArea.bottom) {
+			while (visibleLine < model.cs().LinesDisplayed() && yposScreen < rcArea.bottom) {
 
-				const int lineDoc = model.cs.DocFromDisplay(visibleLine);
+				const int lineDoc = model.cs().DocFromDisplay(visibleLine);
 				// Only visible lines should be handled by the code within the loop
-				PLATFORM_ASSERT(model.cs.GetVisible(lineDoc));
-				const int lineStartSet = model.cs.DisplayFromDoc(lineDoc);
+				PLATFORM_ASSERT(model.cs().GetVisible(lineDoc));
+				const int lineStartSet = model.cs().DisplayFromDoc(lineDoc);
 				const int subLine = visibleLine - lineStartSet;
+
+				// tell virtual formatters that we're about to draw a new line
+				model.pdoc->Notify_StartDrawLine( lineDoc );
 
 				// Copy this line and its styles from the document into local arrays
 				// and determine the x position at which each character starts.
@@ -2057,7 +2061,7 @@ void EditView::PaintText(Surface *surfaceWindow, const EditModel &model, PRectan
 		PRectangle rcBeyondEOF = (vsDraw.marginInside) ? rcClient : rcArea;
 		rcBeyondEOF.left = static_cast<XYPOSITION>(vsDraw.textStart);
 		rcBeyondEOF.right = rcBeyondEOF.right - ((vsDraw.marginInside) ? vsDraw.rightMarginWidth : 0);
-		rcBeyondEOF.top = static_cast<XYPOSITION>((model.cs.LinesDisplayed() - model.TopLineOfMain()) * vsDraw.lineHeight);
+		rcBeyondEOF.top = static_cast<XYPOSITION>((model.cs().LinesDisplayed() - model.TopLineOfMain()) * vsDraw.lineHeight);
 		if (rcBeyondEOF.top < rcBeyondEOF.bottom) {
 			surfaceWindow->FillRectangle(rcBeyondEOF, vsDraw.styles[STYLE_DEFAULT].back);
 			if (vsDraw.edgeState == EDGE_LINE) {

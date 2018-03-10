@@ -1,0 +1,184 @@
+// Scintilla source code edit control
+// Copyright 1998-2004 by Neil Hodgson <neilh@scintilla.org>
+// The License.txt file describes the conditions under which this software may be distributed.
+
+#ifndef CCELLBUFFER_H
+#define CCELLBUFFER_H
+
+#ifdef SCI_NAMESPACE
+namespace Scintilla {
+#endif
+
+/**
+ * The line vector contains information about each of the lines in a cell buffer.
+ */
+class LineVector {
+
+	Partitioning starts;
+	PerLine *perLine;
+
+public:
+
+	LineVector();
+	~LineVector();
+	void Init();
+	void SetPerLine(PerLine *pl);
+
+	void InsertText(int line, int delta);
+	void InsertLine(int line, int position, bool lineStart);
+	void SetLineStart(int line, int position);
+	void RemoveLine(int line);
+	int Lines() const {
+		return starts.Partitions();
+	}
+	int LineFromPosition(int pos) const;
+	int LineStart(int line) const {
+		return starts.PositionFromPartition(line);
+	}
+};
+
+/**
+ *
+ */
+class UndoHistory {
+	Action *actions;
+	int lenActions;
+	int maxAction;
+	int currentAction;
+	int undoSequenceDepth;
+	int savePoint;
+	int tentativePoint;
+
+	void EnsureUndoRoom();
+
+	// Private so UndoHistory objects can not be copied
+	UndoHistory(const UndoHistory &);
+
+public:
+	UndoHistory();
+	~UndoHistory();
+
+	const char *AppendAction(actionType at, int position, const char *data, int length, bool &startSequence, bool mayCoalesce=true);
+
+	void BeginUndoAction();
+	void EndUndoAction();
+	void DropUndoSequence();
+	void DeleteUndoHistory();
+
+	/// The save point is a marker in the undo stack where the container has stated that
+	/// the buffer was saved. Undo and redo can move over the save point.
+	void SetSavePoint();
+	bool IsSavePoint() const;
+
+	// Tentative actions are used for input composition so that it can be undone cleanly
+	void TentativeStart();
+	void TentativeCommit();
+	bool TentativeActive() const { return tentativePoint >= 0; }
+	int TentativeSteps();
+
+	/// To perform an undo, StartUndo is called to retrieve the number of steps, then UndoStep is
+	/// called that many times. Similarly for redo.
+	bool CanUndo() const;
+	int StartUndo();
+	const Action &GetUndoStep() const;
+	void CompletedUndoStep();
+	bool CanRedo() const;
+	int StartRedo();
+	const Action &GetRedoStep() const;
+	void CompletedRedoStep();
+};
+
+/**
+ * Holder for an expandable array of characters that supports undo and line markers.
+ * Based on article "Data Structures in a Bit-Mapped Text Editor"
+ * by Wilfred J. Hansen, Byte January 1987, page 183.
+ */
+class CellBuffer : public VCellBuffer {
+private:
+	SplitVector<char> substance;
+	SplitVector<char> style;
+	bool readOnly;
+	int utf8LineEnds;
+
+	bool collectingUndo;
+	UndoHistory uh;
+
+	LineVector lv;
+
+	bool UTF8LineEndOverlaps(int position) const;
+	void ResetLineEnds();
+	/// Actions without undo
+	void BasicInsertString(int position, const char *s, int insertLength);
+	void BasicDeleteChars(int position, int deleteLength);
+
+public:
+
+	CellBuffer();
+	~CellBuffer();
+
+	/// Retrieving positions outside the range of the buffer works and returns 0
+	char CharAt(int position) const override;
+	void GetCharRange(char *buffer, int position, int lengthRetrieve) const override;
+	char StyleAt(int position) const override;
+	void GetStyleRange(unsigned char *buffer, int position, int lengthRetrieve) const override;
+	const char *BufferPointer() override;
+	const char *RangePointer(int position, int rangeLength) override;
+	int GapPosition() const override;
+
+	int Length() const override;
+	void Allocate(int newSize) override;
+	int GetLineEndTypes() const override { return utf8LineEnds; }
+	void SetLineEndTypes(int utf8LineEnds_) override;
+	bool ContainsLineEnd(const char *s, int length) const override;
+	void SetPerLine(PerLine *pl) override;
+	int Lines() const override;
+	int LineStart(int line) const override;
+	int LineFromPosition(int pos) const override { return lv.LineFromPosition(pos); }
+	void InsertLine(int line, int position, bool lineStart) override;
+	void RemoveLine(int line) override;
+	const char *InsertString(int position, const char *s, int insertLength, bool &startSequence) override;
+
+	/// Setting styles for positions outside the range of the buffer is safe and has no effect.
+	/// @return true if the style of a character is changed.
+	bool SetStyleAt(int position, char styleValue) override;
+	bool SetStyleFor(int position, int length, char styleValue) override;
+
+	const char *DeleteChars(int position, int deleteLength, bool &startSequence) override;
+
+	bool IsReadOnly() const override;
+	void SetReadOnly(bool set) override;
+
+	/// The save point is a marker in the undo stack where the container has stated that
+	/// the buffer was saved. Undo and redo can move over the save point.
+	void SetSavePoint() override;
+	bool IsSavePoint() const override;
+
+	void TentativeStart() override;
+	void TentativeCommit() override;
+	bool TentativeActive() const override;
+	int TentativeSteps() override;
+
+	bool SetUndoCollection(bool collectUndo) override;
+	bool IsCollectingUndo() const override;
+	void BeginUndoAction() override;
+	void EndUndoAction() override;
+	void AddUndoAction(int token, bool mayCoalesce) override;
+	void DeleteUndoHistory() override;
+
+	/// To perform an undo, StartUndo is called to retrieve the number of steps, then UndoStep is
+	/// called that many times. Similarly for redo.
+	bool CanUndo() const override;
+	int StartUndo() override;
+	const Action &GetUndoStep() const override;
+	void PerformUndoStep() override;
+	bool CanRedo() const override;
+	int StartRedo() override;
+	const Action &GetRedoStep() const override;
+	void PerformRedoStep() override;
+};
+
+#ifdef SCI_NAMESPACE
+}
+#endif
+
+#endif

@@ -18,7 +18,9 @@
 #include "Partitioning.h"
 #include "RunStyles.h"
 #include "SparseVector.h"
+#include "VContent.h"
 #include "ContractionState.h"
+#include "CContractionState.h"
 
 #ifdef SCI_NAMESPACE
 using namespace Scintilla;

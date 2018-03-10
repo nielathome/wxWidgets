@@ -92,7 +92,10 @@ int LexInterface::LineEndTypesSupported() {
 	return 0;
 }
 
-Document::Document() {
+Document::Document( content_ptr_t content )
+	: VDocument{ content },
+	  cb{ *m_CellBuffer }
+{
 	refCount = 0;
 	pcf = NULL;
 #ifdef _WIN32
@@ -121,11 +124,11 @@ Document::Document() {
 
 	UTF8BytesOfLeadInitialise();
 
-	perLineData[ldMarkers] = new LineMarkers();
-	perLineData[ldLevels] = new LineLevels();
-	perLineData[ldState] = new LineState();
-	perLineData[ldMargin] = new LineAnnotation();
-	perLineData[ldAnnotation] = new LineAnnotation();
+	perLineData[ldMarkers] = content->GetLineMarkers();
+	perLineData[ldLevels] = content->GetLineLevels();
+	perLineData[ldState] = content->GetLineState();
+	perLineData[ldMargin] = content->GetLineMargin();
+	perLineData[ldAnnotation] = content->GetLineAnnotation();
 
 	cb.SetPerLine(this);
 
@@ -137,7 +140,7 @@ Document::~Document() {
 		it->watcher->NotifyDeleted(this, it->userData);
 	}
 	for (int j=0; j<ldSize; j++) {
-		delete perLineData[j];
+		intrusive_ptr_release(dynamic_cast<VLifeTime*>(perLineData[j]));
 		perLineData[j] = 0;
 	}
 	delete regex;
@@ -284,16 +287,16 @@ void Document::TentativeUndo() {
 }
 
 int Document::GetMark(int line) {
-	return static_cast<LineMarkers *>(perLineData[ldMarkers])->MarkValue(line);
+	return static_cast<VLineMarkers *>(perLineData[ldMarkers])->MarkValue(line);
 }
 
 int Document::MarkerNext(int lineStart, int mask) const {
-	return static_cast<LineMarkers *>(perLineData[ldMarkers])->MarkerNext(lineStart, mask);
+	return static_cast<VLineMarkers *>(perLineData[ldMarkers])->MarkerNext(lineStart, mask);
 }
 
 int Document::AddMark(int line, int markerNum) {
 	if (line >= 0 && line <= LinesTotal()) {
-		int prev = static_cast<LineMarkers *>(perLineData[ldMarkers])->
+		int prev = static_cast<VLineMarkers *>(perLineData[ldMarkers])->
 			AddMark(line, markerNum, LinesTotal());
 		DocModification mh(SC_MOD_CHANGEMARKER, LineStart(line), 0, 0, 0, line);
 		NotifyModified(mh);
@@ -310,20 +313,20 @@ void Document::AddMarkSet(int line, int valueSet) {
 	unsigned int m = valueSet;
 	for (int i = 0; m; i++, m >>= 1)
 		if (m & 1)
-			static_cast<LineMarkers *>(perLineData[ldMarkers])->
+			static_cast<VLineMarkers *>(perLineData[ldMarkers])->
 				AddMark(line, i, LinesTotal());
 	DocModification mh(SC_MOD_CHANGEMARKER, LineStart(line), 0, 0, 0, line);
 	NotifyModified(mh);
 }
 
 void Document::DeleteMark(int line, int markerNum) {
-	static_cast<LineMarkers *>(perLineData[ldMarkers])->DeleteMark(line, markerNum, false);
+	static_cast<VLineMarkers *>(perLineData[ldMarkers])->DeleteMark(line, markerNum, false);
 	DocModification mh(SC_MOD_CHANGEMARKER, LineStart(line), 0, 0, 0, line);
 	NotifyModified(mh);
 }
 
 void Document::DeleteMarkFromHandle(int markerHandle) {
-	static_cast<LineMarkers *>(perLineData[ldMarkers])->DeleteMarkFromHandle(markerHandle);
+	static_cast<VLineMarkers *>(perLineData[ldMarkers])->DeleteMarkFromHandle(markerHandle);
 	DocModification mh(SC_MOD_CHANGEMARKER, 0, 0, 0, 0);
 	mh.line = -1;
 	NotifyModified(mh);
@@ -332,7 +335,7 @@ void Document::DeleteMarkFromHandle(int markerHandle) {
 void Document::DeleteAllMarks(int markerNum) {
 	bool someChanges = false;
 	for (int line = 0; line < LinesTotal(); line++) {
-		if (static_cast<LineMarkers *>(perLineData[ldMarkers])->DeleteMark(line, markerNum, true))
+		if (static_cast<VLineMarkers *>(perLineData[ldMarkers])->DeleteMark(line, markerNum, true))
 			someChanges = true;
 	}
 	if (someChanges) {
@@ -343,7 +346,7 @@ void Document::DeleteAllMarks(int markerNum) {
 }
 
 int Document::LineFromHandle(int markerHandle) {
-	return static_cast<LineMarkers *>(perLineData[ldMarkers])->LineFromHandle(markerHandle);
+	return static_cast<VLineMarkers *>(perLineData[ldMarkers])->LineFromHandle(markerHandle);
 }
 
 Sci_Position SCI_METHOD Document::LineStart(Sci_Position line) const {
@@ -418,7 +421,7 @@ int Document::VCHomePosition(int position) const {
 }
 
 int SCI_METHOD Document::SetLevel(Sci_Position line, int level) {
-	int prev = static_cast<LineLevels *>(perLineData[ldLevels])->SetLevel(line, level, LinesTotal());
+	int prev = static_cast<VLineLevels *>(perLineData[ldLevels])->SetLevel(line, level, LinesTotal());
 	if (prev != level) {
 		DocModification mh(SC_MOD_CHANGEFOLD | SC_MOD_CHANGEMARKER,
 		                   LineStart(line), 0, 0, 0, line);
@@ -430,11 +433,11 @@ int SCI_METHOD Document::SetLevel(Sci_Position line, int level) {
 }
 
 int SCI_METHOD Document::GetLevel(Sci_Position line) const {
-	return static_cast<LineLevels *>(perLineData[ldLevels])->GetLevel(line);
+	return static_cast<VLineLevels *>(perLineData[ldLevels])->GetLevel(line);
 }
 
 void Document::ClearLevels() {
-	static_cast<LineLevels *>(perLineData[ldLevels])->ClearLevels();
+	static_cast<VLineLevels *>(perLineData[ldLevels])->ClearLevels();
 }
 
 static bool IsSubordinate(int levelStart, int levelTry) {
@@ -2121,7 +2124,7 @@ void Document::LexerChanged() {
 }
 
 int SCI_METHOD Document::SetLineState(Sci_Position line, int state) {
-	int statePrevious = static_cast<LineState *>(perLineData[ldState])->SetLineState(line, state);
+	int statePrevious = static_cast<VLineState *>(perLineData[ldState])->SetLineState(line, state);
 	if (state != statePrevious) {
 		DocModification mh(SC_MOD_CHANGELINESTATE, LineStart(line), 0, 0, 0, line);
 		NotifyModified(mh);
@@ -2130,11 +2133,11 @@ int SCI_METHOD Document::SetLineState(Sci_Position line, int state) {
 }
 
 int SCI_METHOD Document::GetLineState(Sci_Position line) const {
-	return static_cast<LineState *>(perLineData[ldState])->GetLineState(line);
+	return static_cast<VLineState *>(perLineData[ldState])->GetLineState(line);
 }
 
 int Document::GetMaxLineState() {
-	return static_cast<LineState *>(perLineData[ldState])->GetMaxLineState();
+	return static_cast<VLineState *>(perLineData[ldState])->GetMaxLineState();
 }
 
 void SCI_METHOD Document::ChangeLexerState(Sci_Position start, Sci_Position end) {
@@ -2143,24 +2146,24 @@ void SCI_METHOD Document::ChangeLexerState(Sci_Position start, Sci_Position end)
 }
 
 StyledText Document::MarginStyledText(int line) const {
-	LineAnnotation *pla = static_cast<LineAnnotation *>(perLineData[ldMargin]);
+	VLineAnnotation *pla = static_cast<VLineAnnotation *>(perLineData[ldMargin]);
 	return StyledText(pla->Length(line), pla->Text(line),
 		pla->MultipleStyles(line), pla->Style(line), pla->Styles(line));
 }
 
 void Document::MarginSetText(int line, const char *text) {
-	static_cast<LineAnnotation *>(perLineData[ldMargin])->SetText(line, text);
+	static_cast<VLineAnnotation *>(perLineData[ldMargin])->SetText(line, text);
 	DocModification mh(SC_MOD_CHANGEMARGIN, LineStart(line), 0, 0, 0, line);
 	NotifyModified(mh);
 }
 
 void Document::MarginSetStyle(int line, int style) {
-	static_cast<LineAnnotation *>(perLineData[ldMargin])->SetStyle(line, style);
+	static_cast<VLineAnnotation *>(perLineData[ldMargin])->SetStyle(line, style);
 	NotifyModified(DocModification(SC_MOD_CHANGEMARGIN, LineStart(line), 0, 0, 0, line));
 }
 
 void Document::MarginSetStyles(int line, const unsigned char *styles) {
-	static_cast<LineAnnotation *>(perLineData[ldMargin])->SetStyles(line, styles);
+	static_cast<VLineAnnotation *>(perLineData[ldMargin])->SetStyles(line, styles);
 	NotifyModified(DocModification(SC_MOD_CHANGEMARGIN, LineStart(line), 0, 0, 0, line));
 }
 
@@ -2169,11 +2172,11 @@ void Document::MarginClearAll() {
 	for (int l=0; l<maxEditorLine; l++)
 		MarginSetText(l, 0);
 	// Free remaining data
-	static_cast<LineAnnotation *>(perLineData[ldMargin])->ClearAll();
+	static_cast<VLineAnnotation *>(perLineData[ldMargin])->ClearAll();
 }
 
 StyledText Document::AnnotationStyledText(int line) const {
-	LineAnnotation *pla = static_cast<LineAnnotation *>(perLineData[ldAnnotation]);
+	VLineAnnotation *pla = static_cast<VLineAnnotation *>(perLineData[ldAnnotation]);
 	return StyledText(pla->Length(line), pla->Text(line),
 		pla->MultipleStyles(line), pla->Style(line), pla->Styles(line));
 }
@@ -2181,7 +2184,7 @@ StyledText Document::AnnotationStyledText(int line) const {
 void Document::AnnotationSetText(int line, const char *text) {
 	if (line >= 0 && line < LinesTotal()) {
 		const int linesBefore = AnnotationLines(line);
-		static_cast<LineAnnotation *>(perLineData[ldAnnotation])->SetText(line, text);
+		static_cast<VLineAnnotation *>(perLineData[ldAnnotation])->SetText(line, text);
 		const int linesAfter = AnnotationLines(line);
 		DocModification mh(SC_MOD_CHANGEANNOTATION, LineStart(line), 0, 0, 0, line);
 		mh.annotationLinesAdded = linesAfter - linesBefore;
@@ -2190,19 +2193,19 @@ void Document::AnnotationSetText(int line, const char *text) {
 }
 
 void Document::AnnotationSetStyle(int line, int style) {
-	static_cast<LineAnnotation *>(perLineData[ldAnnotation])->SetStyle(line, style);
+	static_cast<VLineAnnotation *>(perLineData[ldAnnotation])->SetStyle(line, style);
 	DocModification mh(SC_MOD_CHANGEANNOTATION, LineStart(line), 0, 0, 0, line);
 	NotifyModified(mh);
 }
 
 void Document::AnnotationSetStyles(int line, const unsigned char *styles) {
 	if (line >= 0 && line < LinesTotal()) {
-		static_cast<LineAnnotation *>(perLineData[ldAnnotation])->SetStyles(line, styles);
+		static_cast<VLineAnnotation *>(perLineData[ldAnnotation])->SetStyles(line, styles);
 	}
 }
 
 int Document::AnnotationLines(int line) const {
-	return static_cast<LineAnnotation *>(perLineData[ldAnnotation])->Lines(line);
+	return static_cast<VLineAnnotation *>(perLineData[ldAnnotation])->Lines(line);
 }
 
 void Document::AnnotationClearAll() {
@@ -2210,7 +2213,7 @@ void Document::AnnotationClearAll() {
 	for (int l=0; l<maxEditorLine; l++)
 		AnnotationSetText(l, 0);
 	// Free remaining data
-	static_cast<LineAnnotation *>(perLineData[ldAnnotation])->ClearAll();
+	static_cast<VLineAnnotation *>(perLineData[ldAnnotation])->ClearAll();
 }
 
 void Document::IncrementStyleClock() {

@@ -3141,8 +3141,8 @@ int wxStyledTextCtrl::GetZoom() const
 
 // Create a new document object.
 // Starts with reference count of 1 and not selected into editor.
-void* wxStyledTextCtrl::CreateDocument() {
-         return (void*)SendMsg(SCI_CREATEDOCUMENT);
+void* wxStyledTextCtrl::CreateDocument(void* docContents) {
+         return (void*)SendMsg(SCI_CREATEDOCUMENT, 0, (sptr_t)docContents);
 }
 
 // Extend life of document.

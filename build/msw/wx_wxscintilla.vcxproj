@@ -541,6 +541,7 @@
     <ClCompile Include="..\..\src\stc\scintilla\src\Style.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexlib\StyleContext.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\UniConversion.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\VContent.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\ViewStyle.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexlib\WordList.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\XPM.cxx" />
@@ -566,6 +567,61 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\Accessor.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\CharacterCategory.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\CharacterSet.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\LexAccessor.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\LexerBase.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\LexerModule.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\LexerNoExceptions.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\LexerSimple.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\OptionSet.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\PropSetSimple.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\SparseState.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\StringCopy.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\StyleContext.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\SubStyles.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\WordList.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\AutoComplete.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\CallTip.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\CaseConvert.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\CaseFolder.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\Catalogue.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\CCellBuffer.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\CContractionState.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\CellBuffer.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\CharClassify.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\ContractionState.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\CPerLine.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\Decoration.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\Document.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\EditModel.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\Editor.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\EditView.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\ExternalLexer.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\FontQuality.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\Indicator.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\KeyMap.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\LineMarker.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\MarginView.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\Partitioning.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\PerLine.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\Position.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\PositionCache.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\RESearch.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\RunStyles.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\ScintillaBase.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\Selection.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\SparseVector.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\SplitVector.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\Style.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\UnicodeFromUTF8.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\UniConversion.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\VContent.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\ViewStyle.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\XPM.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

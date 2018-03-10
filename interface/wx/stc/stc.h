@@ -6601,7 +6601,7 @@ public:
         Create a new document object.
         Starts with reference count of 1 and not selected into editor.
     */
-    void* CreateDocument();
+    void* CreateDocument(void* docContents);
 
     /**
         Extend life of document.

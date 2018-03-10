@@ -198,7 +198,7 @@ struct RegexError : public std::runtime_error {
 
 /**
  */
-class Document : PerLine, public IDocumentWithLineEnd, public ILoader {
+class Document : PerLine, public VDocument, public IDocumentWithLineEnd, public ILoader {
 
 public:
 	/** Used to pair watcher pointer with user data. */
@@ -218,7 +218,7 @@ public:
 
 private:
 	int refCount;
-	CellBuffer cb;
+	VCellBuffer &cb;
 	CharClassify charClass;
 	CaseFolder *pcf;
 	int endStyled;
@@ -269,7 +269,7 @@ public:
 
 	DecorationList decorations;
 
-	Document();
+	Document( content_ptr_t content = MakeStdContent() );
 	virtual ~Document();
 
 	int AddRef();
@@ -463,6 +463,9 @@ private:
 	void NotifyModifyAttempt();
 	void NotifySavePoint(bool atSavePoint);
 	void NotifyModified(DocModification mh);
+
+	void VIndicatorFillRange( int indicator, int start, int size, int value ) override;
+	void VTextChanged( int origNumLines, int delLength, int insertLength ) override;
 };
 
 class UndoGroup {
