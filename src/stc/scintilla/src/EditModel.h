@@ -46,6 +46,8 @@ public:
 
 	int foldFlags;
 	int foldDisplayTextStyle;
+
+	// <NLOG>
 	VContractionState &cs() const {
 		return *currentcs;
 	}

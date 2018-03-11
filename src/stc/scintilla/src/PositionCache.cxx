@@ -25,7 +25,6 @@
 #include "SplitVector.h"
 #include "Partitioning.h"
 #include "RunStyles.h"
-#include "ContractionState.h"
 #include "CellBuffer.h"
 #include "KeyMap.h"
 #include "Indicator.h"

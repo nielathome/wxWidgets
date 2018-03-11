@@ -1701,7 +1701,7 @@ void Editor::Paint(Surface *surfaceWindow, PRectangle rcArea) {
 
 	StyleAreaBounded(rcArea, false);
 
-	// tell virtual formatters that we're about to draw a view
+	// <NLOG> tell virtual formatters that we're about to draw a view
 	pdoc->Notify_StartDrawView();
 
 	PRectangle rcClient = GetClientRectangle();
@@ -5228,7 +5228,7 @@ void Editor::SetDocPointer(Document *document) {
 
 	SetRepresentations();
 
-	// Reset the contraction state to fully shown.
+	// <NLOG> Reset the contraction state to fully shown.
 	VContractionState * vcs{ pdoc->GetContractionState() };
 	const bool docManagedCs{ vcs != nullptr };
 	SetCs( vcs );
@@ -5237,6 +5237,7 @@ void Editor::SetDocPointer(Document *document) {
 		cs().InsertLines( 0, pdoc->LinesTotal() - 1 );
 		SetAnnotationHeights( 0, pdoc->LinesTotal() );
 	}
+
 	view.llc.Deallocate();
 	NeedWrapping();
 
@@ -7572,6 +7573,7 @@ sptr_t Editor::WndProc(unsigned int iMessage, uptr_t wParam, sptr_t lParam) {
 		return 0;
 
 	case SCI_CREATEDOCUMENT: {
+			// <NLOG>
 			content_ptr_t content{ reinterpret_cast<content_ptr_t>(lParam) };
 			intrusive_ptr_add_ref( content );
 			Document *doc = new Document( content );

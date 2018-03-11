@@ -1,4 +1,5 @@
 //
+// <NLOG>
 // Copyright 2017 by Niel Clausen
 // The License.txt file describes the conditions under which this software may be distributed.
 //

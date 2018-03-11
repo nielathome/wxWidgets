@@ -20,7 +20,7 @@
 #include "SplitVector.h"
 #include "Partitioning.h"
 #include "CellBuffer.h"
-#include "CCellBuffer.h"
+#include "CCellBuffer.h" // <NLOG>
 #include "UniConversion.h"
 
 #ifdef SCI_NAMESPACE

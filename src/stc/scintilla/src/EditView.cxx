@@ -33,7 +33,7 @@
 #include "ContractionState.h"
 #include "CellBuffer.h"
 #include "PerLine.h"
-#include "CPerLine.h"
+#include "CPerLine.h" // <NLOG>
 #include "KeyMap.h"
 #include "Indicator.h"
 #include "XPM.h"
@@ -1982,7 +1982,7 @@ void EditView::PaintText(Surface *surfaceWindow, const EditModel &model, PRectan
 				const int lineStartSet = model.cs().DisplayFromDoc(lineDoc);
 				const int subLine = visibleLine - lineStartSet;
 
-				// tell virtual formatters that we're about to draw a new line
+				// <NLOG> tell virtual formatters that we're about to draw a new line
 				model.pdoc->Notify_StartDrawLine( lineDoc );
 
 				// Copy this line and its styles from the document into local arrays

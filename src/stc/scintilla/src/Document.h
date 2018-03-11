@@ -198,6 +198,7 @@ struct RegexError : public std::runtime_error {
 
 /**
  */
+// <NLOG>
 class Document : PerLine, public VDocument, public IDocumentWithLineEnd, public ILoader {
 
 public:
@@ -218,7 +219,7 @@ public:
 
 private:
 	int refCount;
-	VCellBuffer &cb;
+	VCellBuffer &cb; // <NLOG>
 	CharClassify charClass;
 	CaseFolder *pcf;
 	int endStyled;
@@ -269,6 +270,7 @@ public:
 
 	DecorationList decorations;
 
+	// <NLOG>
 	Document( content_ptr_t content = MakeStdContent() );
 	virtual ~Document();
 
@@ -464,6 +466,7 @@ private:
 	void NotifySavePoint(bool atSavePoint);
 	void NotifyModified(DocModification mh);
 
+	// <NLOG>
 	void VIndicatorFillRange( int indicator, int start, int size, int value ) override;
 	void VTextChanged( int origNumLines, int delLength, int insertLength ) override;
 };

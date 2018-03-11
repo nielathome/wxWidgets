@@ -30,7 +30,7 @@
 #include "Partitioning.h"
 #include "RunStyles.h"
 #include "ContractionState.h"
-#include "CContractionState.h"
+#include "CContractionState.h" // <NLOG>
 #include "CellBuffer.h"
 #include "KeyMap.h"
 #include "Indicator.h"
@@ -55,6 +55,7 @@ Caret::Caret() :
 	active(false), on(false), period(500) {}
 
 EditModel::EditModel() {
+	// <NLOG>
 	SetCs();
 
 	inOverstrike = false;
@@ -80,10 +81,12 @@ EditModel::~EditModel() {
 	pdoc->Release();
 	pdoc = 0;
 
+	// <NLOG>
 	if( currentcs )
 		intrusive_ptr_release( currentcs );
 }
 
+// <NLOG>
 void EditModel::SetCs( VContractionState * newcs ) {
 	if( currentcs )
 		intrusive_ptr_release( currentcs );

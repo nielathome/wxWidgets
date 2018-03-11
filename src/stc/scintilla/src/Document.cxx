@@ -92,6 +92,7 @@ int LexInterface::LineEndTypesSupported() {
 	return 0;
 }
 
+// <NLOG>
 Document::Document( content_ptr_t content )
 	: VDocument{ content },
 	  cb{ *m_CellBuffer }
@@ -124,6 +125,7 @@ Document::Document( content_ptr_t content )
 
 	UTF8BytesOfLeadInitialise();
 
+	// <NLOG>
 	perLineData[ldMarkers] = content->GetLineMarkers();
 	perLineData[ldLevels] = content->GetLineLevels();
 	perLineData[ldState] = content->GetLineState();
@@ -133,6 +135,16 @@ Document::Document( content_ptr_t content )
 	cb.SetPerLine(this);
 
 	pli = 0;
+
+	// <NLOG>
+	// for occasions where the CellBuffer already contains text, make sure
+	// the rest of the system knows about it
+	const int length{ cb.Length() };
+	if( length != 0 )
+	{
+		DocModification mh{ SC_MOD_INSERTTEXT | SC_PERFORMED_USER, 0, length, LinesTotal(), nullptr };
+		NotifyModified( mh );
+	}
 }
 
 Document::~Document() {
@@ -140,6 +152,7 @@ Document::~Document() {
 		it->watcher->NotifyDeleted(this, it->userData);
 	}
 	for (int j=0; j<ldSize; j++) {
+		// <NLOG>
 		intrusive_ptr_release(dynamic_cast<VLifeTime*>(perLineData[j]));
 		perLineData[j] = 0;
 	}

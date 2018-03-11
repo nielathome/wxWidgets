@@ -19,7 +19,7 @@
 #include "Partitioning.h"
 #include "CellBuffer.h"
 #include "PerLine.h"
-#include "CPerLine.h"
+#include "CPerLine.h" // <NLOG>
 
 #ifdef SCI_NAMESPACE
 using namespace Scintilla;
