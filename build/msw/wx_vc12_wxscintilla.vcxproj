@@ -433,8 +433,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\stc\scintilla\lexlib\Accessor.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexlib\CharacterCategory.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\AutoComplete.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\CallTip.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\CaseConvert.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\CaseFolder.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\Catalogue.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\CellBuffer.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\CharClassify.cxx" />
@@ -442,6 +445,8 @@
     <ClCompile Include="..\..\src\stc\scintilla\src\ContractionState.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\Decoration.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\Document.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\EditModel.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\EditView.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\Editor.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\ExternalLexer.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\Indicator.cxx" />
@@ -459,6 +464,8 @@
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexBaan.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexBash.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexBasic.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexBatch.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexBibTeX.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexBullant.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexCLW.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexCOBOL.cxx" />
@@ -471,10 +478,15 @@
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexCrontab.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexCsound.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexD.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexDiff.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexDMAP.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexDMIS.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexECL.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexEDIFACT.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexEScript.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexEiffel.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexErlang.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexErrorList.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexFlagship.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexForth.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexFortran.cxx" />
@@ -482,8 +494,12 @@
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexGui4Cli.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexHTML.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexHaskell.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexHex.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexInno.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexJSON.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexKix.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexKVIrc.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexLatex.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexLisp.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexLout.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexLua.cxx" />
@@ -491,6 +507,7 @@
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexMPT.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexMSSQL.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexMagik.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexMake.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexMarkdown.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexMatlab.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexMetapost.cxx" />
@@ -498,11 +515,12 @@
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexMySQL.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexNimrod.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexNsis.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexNull.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexOScript.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexOpal.cxx" />
-    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexOthers.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexPB.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexPLM.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexPO.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexPOV.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexPS.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexPascal.cxx" />
@@ -510,12 +528,16 @@
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexPowerPro.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexPowerShell.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexProgress.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexProps.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexPython.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexR.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexRebol.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexRegistry.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexRuby.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexRust.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexSML.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexSQL.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\lexers\LexSTTXT.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexScriptol.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexSmalltalk.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexers\LexSorcus.cxx" />
@@ -538,6 +560,7 @@
     <ClCompile Include="..\..\src\stc\scintilla\lexlib\LexerNoExceptions.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexlib\LexerSimple.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\LineMarker.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\MarginView.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\PerLine.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\PositionCache.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexlib\PropSetSimple.cxx" />
@@ -548,6 +571,7 @@
     <ClCompile Include="..\..\src\stc\scintilla\src\Style.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexlib\StyleContext.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\UniConversion.cxx" />
+    <ClCompile Include="..\..\src\stc\scintilla\src\VContent.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\ViewStyle.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\lexlib\WordList.cxx" />
     <ClCompile Include="..\..\src\stc\scintilla\src\XPM.cxx" />
@@ -573,6 +597,61 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\Accessor.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\CharacterCategory.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\CharacterSet.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\LexAccessor.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\LexerBase.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\LexerModule.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\LexerNoExceptions.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\LexerSimple.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\OptionSet.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\PropSetSimple.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\SparseState.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\StringCopy.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\StyleContext.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\SubStyles.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\lexlib\WordList.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\AutoComplete.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\CallTip.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\CaseConvert.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\CaseFolder.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\Catalogue.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\CCellBuffer.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\CContractionState.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\CellBuffer.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\CharClassify.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\ContractionState.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\CPerLine.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\Decoration.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\Document.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\EditModel.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\Editor.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\EditView.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\ExternalLexer.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\FontQuality.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\Indicator.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\KeyMap.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\LineMarker.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\MarginView.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\Partitioning.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\PerLine.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\Position.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\PositionCache.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\RESearch.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\RunStyles.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\ScintillaBase.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\Selection.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\SparseVector.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\SplitVector.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\Style.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\UnicodeFromUTF8.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\UniConversion.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\VContent.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\ViewStyle.h" />
+    <ClInclude Include="..\..\src\stc\scintilla\src\XPM.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

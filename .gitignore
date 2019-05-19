@@ -33,6 +33,7 @@
 /build/msw/*c*_mswdll
 /build/msw/*c*_mswddll
 /build/msw/*c*_mswudll
+/build/msw/*c*_mswudll_x64
 /build/msw/*c*_mswuddll
 /build/msw/*c*_mswuniv
 /build/msw/*c*_mswunivd
@@ -204,6 +205,7 @@
 /lib/vc_dll
 /lib/vc_lib
 /lib/vc_x64_dll
+/lib/vc140_x64_dll
 /lib/vc_x64_lib
 /lib/wat_lib
 /lib/winmm32_sc.lib
