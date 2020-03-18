@@ -164,7 +164,7 @@ public:
     };
 
     /**
-        Date calculations often depend on the country and wxDateTime allows to set
+        Date calculations often depend on the country and wxDateTime allows setting
         the country whose conventions should be used using SetCountry(). It takes
         one of the following values as parameter.
     */
@@ -263,7 +263,7 @@ public:
 
         This struct is analogous to standard C <code>struct tm</code> and uses
         the same, not always immediately obvious, conventions for its members:
-        notably its mon and mday fields count from 0 while yday counts from 1.
+        notably its mon and yday fields count from 0 while mday counts from 1.
      */
     struct Tm
     {
@@ -738,7 +738,7 @@ public:
     /**
        Returns the difference between this object and @a dt as a wxDateSpan.
 
-       This method allows to find the number of entire years, months, weeks and
+       This method allows finding the number of entire years, months, weeks and
        days between @a dt and this date.
 
        @since 2.9.5

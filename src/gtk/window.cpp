@@ -276,7 +276,7 @@ static gboolean expose_event(GtkWidget*, GdkEventExpose* gdk_event, wxWindow* wi
 extern "C" {
 static gboolean
 #ifdef __WXGTK3__
-draw_border(GtkWidget*, cairo_t* cr, wxWindow* win)
+draw_border(GtkWidget* widget, cairo_t* cr, wxWindow* win)
 #else
 draw_border(GtkWidget* widget, GdkEventExpose* gdk_event, wxWindow* win)
 #endif
@@ -293,10 +293,20 @@ draw_border(GtkWidget* widget, GdkEventExpose* gdk_event, wxWindow* win)
 
     GtkAllocation alloc;
     gtk_widget_get_allocation(win->m_wxwindow, &alloc);
-    const int x = alloc.x;
-    const int y = alloc.y;
+    int x = alloc.x;
+    int y = alloc.y;
     const int w = alloc.width;
     const int h = alloc.height;
+#ifdef __WXGTK3__
+    if (!gtk_widget_get_has_window(widget))
+    {
+        // cairo_t origin is set to widget's origin, need to adjust
+        // coordinates for child when they are not relative to parent
+        gtk_widget_get_allocation(widget, &alloc);
+        x -= alloc.x;
+        y -= alloc.y;
+    }
+#endif
 
     if (w <= 0 || h <= 0)
         return false;
@@ -849,14 +859,10 @@ wxTranslateGTKKeyEventToWx(wxKeyEvent& event,
 
     wxLogTrace(TRACE_KEYS, wxT("\t-> wxKeyCode %ld"), key_code);
 
-    // sending unknown key events doesn't really make sense
-    if ( !key_code )
-        return false;
-
     event.m_keyCode = key_code;
 
 #if wxUSE_UNICODE
-    event.m_uniChar = gdk_keyval_to_unicode(key_code);
+    event.m_uniChar = gdk_keyval_to_unicode(key_code ? key_code : gdk_event->keyval);
     if ( !event.m_uniChar && event.m_keyCode <= WXK_DELETE )
     {
         // Set Unicode key code to the ASCII equivalent for compatibility. E.g.
@@ -864,6 +870,13 @@ wxTranslateGTKKeyEventToWx(wxKeyEvent& event,
         // codes of 13.
         event.m_uniChar = event.m_keyCode;
     }
+
+    // sending unknown key events doesn't really make sense
+    if ( !key_code && !event.m_uniChar )
+        return false;
+#else
+    if (!key_code)
+        return false;
 #endif // wxUSE_UNICODE
 
     // now fill all the other fields
@@ -2005,10 +2018,28 @@ size_allocate(GtkWidget*
 #if GTK_CHECK_VERSION(3,14,0)
     if (gtk_check_version(3,14,0) == NULL)
     {
+        // Prevent under-allocated widgets from drawing outside their allocation
         GtkAllocation clip;
         gtk_widget_get_clip(widget, &clip);
         if (clip.width > w || clip.height > h)
-            gtk_widget_set_clip(widget, alloc);
+        {
+            GtkStyleContext* sc = gtk_widget_get_style_context(widget);
+            int outline_offset, outline_width;
+            gtk_style_context_get(sc, gtk_style_context_get_state(sc),
+                "outline-offset", &outline_offset, "outline-width", &outline_width, NULL);
+            const int outline = outline_offset + outline_width;
+            GtkAllocation a = *alloc;
+            if (outline > 0)
+            {
+                // Allow enough room for focus indicator "outline", it's drawn
+                // outside of GtkCheckButton allocation with Adwaita theme
+                a.x -= outline;
+                a.y -= outline;
+                a.width += outline + outline;
+                a.height += outline + outline;
+            }
+            gtk_widget_set_clip(widget, &a);
+        }
     }
 #endif
     if (win->m_wxwindow)
@@ -3407,6 +3438,20 @@ void wxWindowGTK::DoGetTextExtent( const wxString& string,
     wxTextMeasure txm(win, &fontToUse);
     txm.GetTextExtent(string, x, y, descent, externalLeading);
 }
+
+#ifdef __WXGTK3__
+double wxWindowGTK::GetContentScaleFactor() const
+{
+    double scaleFactor = 1;
+#if GTK_CHECK_VERSION(3,10,0)
+    if (m_widget && gtk_check_version(3,10,0) == NULL)
+    {
+        scaleFactor = gtk_widget_get_scale_factor(m_widget);
+    }
+#endif
+    return scaleFactor;
+}
+#endif
 
 void wxWindowGTK::GTKDisableFocusOutEvent()
 {

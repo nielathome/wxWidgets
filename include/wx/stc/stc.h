@@ -3887,19 +3887,19 @@ public:
     // Set the display mode of visual flags for wrapped lines.
     void SetWrapVisualFlags(int wrapVisualFlags);
 
-    // Retrive the display mode of visual flags for wrapped lines.
+    // Retrieve the display mode of visual flags for wrapped lines.
     int GetWrapVisualFlags() const;
 
     // Set the location of visual flags for wrapped lines.
     void SetWrapVisualFlagsLocation(int wrapVisualFlagsLocation);
 
-    // Retrive the location of visual flags for wrapped lines.
+    // Retrieve the location of visual flags for wrapped lines.
     int GetWrapVisualFlagsLocation() const;
 
     // Set the start indent for wrapped lines.
     void SetWrapStartIndent(int indent);
 
-    // Retrive the start indent for wrapped lines.
+    // Retrieve the start indent for wrapped lines.
     int GetWrapStartIndent() const;
 
     // Sets how wrapped sublines are placed. Default is wxSTC_WRAPINDENT_FIXED.
