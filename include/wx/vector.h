@@ -26,6 +26,12 @@ inline void wxVectorSort(wxVector<T>& v)
     std::sort(v.begin(), v.end());
 }
 
+template<typename T>
+inline bool wxVectorContains(const wxVector<T>& v, const T& obj)
+{
+    return std::find(v.begin(), v.end(), obj) != v.end();
+}
+
 #else // !wxUSE_STD_CONTAINERS
 
 #include "wx/scopeguard.h"
@@ -33,17 +39,29 @@ inline void wxVectorSort(wxVector<T>& v)
 #include "wx/meta/if.h"
 
 #include "wx/beforestd.h"
+#if wxUSE_STD_CONTAINERS_COMPATIBLY
+#include <iterator>
+#endif
 #include <new> // for placement new
 #include "wx/afterstd.h"
 
 // wxQsort is declared in wx/utils.h, but can't include that file here,
 // it indirectly includes this file. Just lovely...
+//
+// Moreover, just declaring it here unconditionally results in gcc
+// -Wredundant-decls warning, so use a preprocessor guard to avoid this.
+#ifndef wxQSORT_DECLARED
+
+#define wxQSORT_DECLARED
+
 typedef int (*wxSortCallback)(const void* pItem1,
                               const void* pItem2,
                               const void* user_data);
 WXDLLIMPEXP_BASE void wxQsort(void* pbase, size_t total_elems,
                               size_t size, wxSortCallback cmp,
                               const void* user_data);
+
+#endif // !wxQSORT_DECLARED
 
 namespace wxPrivate
 {
@@ -151,16 +169,15 @@ private:
     // This cryptic expression means "typedef Ops to wxVectorMemOpsMovable if
     // type T is movable type, otherwise to wxVectorMemOpsGeneric".
     //
-    // Note that bcc needs the extra parentheses for non-type template
-    // arguments to compile this expression.
-    typedef typename wxIf< (wxIsMovable<T>::value),
+
+    typedef typename wxIf< wxIsMovable<T>::value,
                            wxPrivate::wxVectorMemOpsMovable<T>,
                            wxPrivate::wxVectorMemOpsGeneric<T> >::value
             Ops;
 
 public:
     typedef size_t size_type;
-    typedef size_t difference_type;
+    typedef ptrdiff_t difference_type;
     typedef T value_type;
     typedef value_type* pointer;
     typedef const value_type* const_pointer;
@@ -172,14 +189,21 @@ public:
     class reverse_iterator
     {
     public:
+#if wxUSE_STD_CONTAINERS_COMPATIBLY
+        typedef std::random_access_iterator_tag iterator_category;
+#endif
+        typedef ptrdiff_t difference_type;
+        typedef T value_type;
+        typedef value_type* pointer;
+        typedef value_type& reference;
+
         reverse_iterator() : m_ptr(NULL) { }
         explicit reverse_iterator(iterator it) : m_ptr(it) { }
-        reverse_iterator(const reverse_iterator& it) : m_ptr(it.m_ptr) { }
 
         reference operator*() const { return *m_ptr; }
         pointer operator->() const { return m_ptr; }
 
-        iterator base() const { return m_ptr; }
+        iterator base() const { return m_ptr + 1; }
 
         reverse_iterator& operator++()
             { --m_ptr; return *this; }
@@ -208,6 +232,14 @@ public:
             { return m_ptr == it.m_ptr; }
         bool operator !=(const reverse_iterator& it) const
             { return m_ptr != it.m_ptr; }
+        bool operator<(const reverse_iterator& it) const
+            { return m_ptr > it.m_ptr; }
+        bool operator>(const reverse_iterator& it) const
+            { return m_ptr < it.m_ptr; }
+        bool operator<=(const reverse_iterator& it) const
+            { return m_ptr >= it.m_ptr; }
+        bool operator>=(const reverse_iterator& it) const
+            { return m_ptr <= it.m_ptr; }
 
     private:
         value_type *m_ptr;
@@ -218,6 +250,14 @@ public:
     class const_reverse_iterator
     {
     public:
+#if wxUSE_STD_CONTAINERS_COMPATIBLY
+        typedef std::random_access_iterator_tag iterator_category;
+#endif
+        typedef ptrdiff_t difference_type;
+        typedef T value_type;
+        typedef const value_type* pointer;
+        typedef const value_type& reference;
+
         const_reverse_iterator() : m_ptr(NULL) { }
         explicit const_reverse_iterator(const_iterator it) : m_ptr(it) { }
         const_reverse_iterator(const reverse_iterator& it) : m_ptr(it.m_ptr) { }
@@ -226,7 +266,7 @@ public:
         const_reference operator*() const { return *m_ptr; }
         const_pointer operator->() const { return m_ptr; }
 
-        const_iterator base() const { return m_ptr; }
+        const_iterator base() const { return m_ptr + 1; }
 
         const_reverse_iterator& operator++()
             { --m_ptr; return *this; }
@@ -255,6 +295,14 @@ public:
             { return m_ptr == it.m_ptr; }
         bool operator !=(const const_reverse_iterator& it) const
             { return m_ptr != it.m_ptr; }
+        bool operator<(const const_reverse_iterator& it) const
+            { return m_ptr > it.m_ptr; }
+        bool operator>(const const_reverse_iterator& it) const
+            { return m_ptr < it.m_ptr; }
+        bool operator<=(const const_reverse_iterator& it) const
+            { return m_ptr >= it.m_ptr; }
+        bool operator>=(const const_reverse_iterator& it) const
+            { return m_ptr <= it.m_ptr; }
 
     protected:
         const value_type *m_ptr;
@@ -646,9 +694,32 @@ void wxVectorSort(wxVector<T>& v)
             wxPrivate::wxVectorComparator<T>::Compare, NULL);
 }
 
+template<typename T>
+inline bool wxVectorContains(const wxVector<T>& v, const T& obj)
+{
+    for ( size_t n = 0; n < v.size(); ++n )
+    {
+        if ( v[n] == obj )
+            return true;
+    }
 
+    return false;
+}
 
 #endif // wxUSE_STD_CONTAINERS/!wxUSE_STD_CONTAINERS
+
+// Define vector::shrink_to_fit() equivalent which can be always used, even
+// when using pre-C++11 std::vector.
+template<typename T>
+inline void wxShrinkToFit(wxVector<T>& v)
+{
+#if !wxUSE_STD_CONTAINERS || __cplusplus >= 201103L || wxCHECK_VISUALC_VERSION(10)
+    v.shrink_to_fit();
+#else
+    wxVector<T> tmp(v);
+    v.swap(tmp);
+#endif
+}
 
 #if WXWIN_COMPATIBILITY_2_8
     #define WX_DECLARE_VECTORBASE(obj, cls) typedef wxVector<obj> cls

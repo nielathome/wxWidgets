@@ -15,11 +15,12 @@
 #include "wx/dcclient.h"
 #include "wx/dcmemory.h"
 #include "wx/dcscreen.h"
+#include "wx/display.h"
 #include "wx/gdicmn.h"
 #include "wx/icon.h"
 #include "wx/gtk/dc.h"
 
-#include <gtk/gtk.h>
+#include "wx/gtk/private/wrapgtk.h"
 
 wxGTKCairoDCImpl::wxGTKCairoDCImpl(wxDC* owner)
     : wxGCDCImpl(owner)
@@ -186,7 +187,11 @@ bool wxGTKCairoDCImpl::DoStretchBlit(int xdest, int ydest, int dstWidth, int dst
     cairo_rectangle(cr, 0, 0, dstWidth, dstHeight);
     double sx, sy;
     source->GetUserScale(&sx, &sy);
-    cairo_scale(cr, dstWidth / (sx * srcWidth), dstHeight / (sy * srcHeight));
+
+    const wxBitmap& bitmap = source->GetImpl()->GetSelectedBitmap();
+    const double bmpScale = bitmap.IsOk() ? bitmap.GetScaleFactor() : 1.0;
+
+    cairo_scale(cr, dstWidth / (sx * srcWidth * bmpScale), dstHeight / (sy * srcHeight * bmpScale));
     cairo_set_source_surface(cr, surfaceSrc, -xsrc_dev, -ysrc_dev);
     const wxRasterOperationMode rop_save = m_logicalFunction;
     SetLogicalFunction(rop);
@@ -194,7 +199,6 @@ bool wxGTKCairoDCImpl::DoStretchBlit(int xdest, int ydest, int dstWidth, int dst
     cairo_surface_t* maskSurf = NULL;
     if (useMask)
     {
-        const wxBitmap& bitmap = source->GetImpl()->GetSelectedBitmap();
         if (bitmap.IsOk())
         {
             wxMask* mask = bitmap.GetMask();
@@ -238,7 +242,7 @@ wxSize wxGTKCairoDCImpl::GetPPI() const
 {
     if ( m_window )
     {
-        return wxGetDisplayPPI();
+        return wxDisplay(m_window).GetPPI();
     }
 
     // For a non-window-based DC the concept of PPI doesn't make much sense
@@ -336,6 +340,7 @@ wxClientDCImpl::wxClientDCImpl(wxClientDC* owner, wxWindow* window)
 
 wxPaintDCImpl::wxPaintDCImpl(wxPaintDC* owner, wxWindow* window)
     : wxGTKCairoDCImpl(owner, window)
+    , m_clip(window->m_nativeUpdateRegion)
 {
     cairo_t* cr = window->GTKPaintContext();
     wxCHECK_RET(cr, "using wxPaintDC without being in a native paint event");
@@ -343,6 +348,20 @@ wxPaintDCImpl::wxPaintDCImpl(wxPaintDC* owner, wxWindow* window)
     wxGraphicsContext* gc = wxGraphicsContext::CreateFromNative(cr);
     gc->EnableOffset(m_contentScaleFactor <= 1);
     SetGraphicsContext(gc);
+}
+
+void wxPaintDCImpl::DestroyClippingRegion()
+{
+    BaseType::DestroyClippingRegion();
+
+    // re-establish clip for paint update area
+    int x, y, w, h;
+    m_clip.GetBox(x, y, w, h);
+    cairo_t* cr = static_cast<cairo_t*>(GetCairoContext());
+    cairo_rectangle(cr,
+        DeviceToLogicalX(x), DeviceToLogicalY(y),
+        DeviceToLogicalXRel(w), DeviceToLogicalYRel(h));
+    cairo_clip(cr);
 }
 //-----------------------------------------------------------------------------
 
@@ -505,8 +524,8 @@ void wxGTKDCImpl::DoGetSizeMM( int* width, int* height ) const
     int w = 0;
     int h = 0;
     GetOwner()->GetSize( &w, &h );
-    if (width) *width = int( double(w) / (m_userScaleX*m_mm_to_pix_x) );
-    if (height) *height = int( double(h) / (m_userScaleY*m_mm_to_pix_y) );
+    if (width) *width = int( double(w) / (m_userScaleX*GetMMToPXx()) );
+    if (height) *height = int( double(h) / (m_userScaleY*GetMMToPXy()) );
 }
 
 // Resolution in pixels per logical inch

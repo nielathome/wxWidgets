@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_PROGRESSDLG
 
@@ -134,7 +131,14 @@ wxGenericProgressDialog::wxGenericProgressDialog(const wxString& title,
 void wxGenericProgressDialog::SetTopParent(wxWindow* parent)
 {
     m_parent = parent;
-    m_parentTop = GetParentForModalDialog(parent, GetWindowStyle());
+
+    // Notice that we intentionally do not use GetParentForModalDialog() here
+    // as we don't want to disable the main application window if null parent
+    // was given (and GetParentForModalDialog() would fall back to it in this
+    // case). This allows creating modeless progress dialog, which can be
+    // useful even though it is also dangerous because it can easily result in
+    // unwanted reentrancies.
+    m_parentTop = parent;
 }
 
 bool wxGenericProgressDialog::Create( const wxString& title,
@@ -237,8 +241,8 @@ bool wxGenericProgressDialog::Create( const wxString& title,
 
     const int borderFlags = wxALL;
 
-    wxSizerFlags sizerFlags
-        = wxSizerFlags().Border(borderFlags, LAYOUT_MARGIN);
+    wxSizerFlags sizerFlags =
+        wxSizerFlags().Border(borderFlags, LAYOUT_MARGIN);
 
     if ( HasPDFlag(wxPD_CAN_SKIP) )
     {
@@ -593,6 +597,7 @@ void wxGenericProgressDialog::SetMaximum(int maximum)
     // we can't have values > 65,536 in the progress control under Windows, so
     // scale everything down
     m_factor = m_maximum / 65536 + 1;
+    m_maximum /= m_factor;
 #endif // __WXMSW__
 }
 

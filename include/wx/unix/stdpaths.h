@@ -4,7 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     2004-10-19
-// Copyright:   (c) 2004 Vadim Zeitlin <vadim@wxwindows.org>
+// Copyright:   (c) 2004 Vadim Zeitlin <vadim@wxwidgets.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -50,7 +50,8 @@ public:
     virtual wxString GetUserDir(Dir userDir) const wxOVERRIDE;
 #endif
     virtual wxString MakeConfigFileName(const wxString& basename,
-                                        ConfigFileConv conv) const wxOVERRIDE;
+                                        ConfigFileConv conv = ConfigFileConv_Ext
+                                        ) const wxOVERRIDE;
 
 protected:
     // Ctor is protected, use wxStandardPaths::Get() instead of instantiating

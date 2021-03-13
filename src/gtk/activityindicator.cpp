@@ -18,9 +18,6 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_ACTIVITYINDICATOR && defined(__WXGTK220__)
 
@@ -28,8 +25,7 @@
 
 #include "wx/math.h"
 
-#include <gtk/gtk.h>
-#include "wx/gtk/private/gtk2-compat.h"
+#include "wx/gtk/private/wrapgtk.h"
 
 // Macro return the specified expression only if GTK+ run time version is less
 // than 2.20 and compiling it only if it is less than 3.0 (which is why this

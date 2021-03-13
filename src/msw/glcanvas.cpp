@@ -18,9 +18,6 @@
 
 #include "wx/wxprec.h"
 
-#if defined(__BORLANDC__)
-    #pragma hdrstop
-#endif
 
 #if wxUSE_GLCANVAS
 
@@ -147,8 +144,24 @@ wxWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 #define WGL_CONTEXT_ES_PROFILE_BIT_EXT            0x00000004
 #endif
 
-typedef HGLRC(WINAPI * PFNWGLCREATECONTEXTATTRIBSARBPROC)
-    (HDC hDC, HGLRC hShareContext, const int *attribList);
+// This helper function only exists to suppress unavoidable gcc 8 warnings
+// about incompatible function casts.
+template <typename T>
+inline T wxWGLProcCast(PROC proc)
+{
+    wxGCC_WARNING_SUPPRESS_CAST_FUNCTION_TYPE()
+
+    return reinterpret_cast<T>(proc);
+
+    wxGCC_WARNING_RESTORE_CAST_FUNCTION_TYPE()
+}
+
+// this macro defines a variable of type "name_t" called "name" and initializes
+// it with the pointer to WGL function "name" (which may be NULL)
+//
+// NB: type name_t must be defined by the code using the macro
+#define wxDEFINE_WGL_FUNC(name) \
+    name##_t name = wxWGLProcCast<name##_t>(wglGetProcAddress(#name))
 
 // ----------------------------------------------------------------------------
 // libraries
@@ -360,7 +373,7 @@ wxGLAttributes& wxGLAttributes::Level(int val)
         AddAttribute(WGL_NUMBER_OVERLAYS_ARB);
         AddAttribute(val);
     }
-    else if ( val < 0 )
+    else
     {
         AddAttribute(WGL_NUMBER_UNDERLAYS_ARB);
         AddAttribute(-val);
@@ -580,9 +593,11 @@ wxGLContext::wxGLContext(wxGLCanvas *win,
     wxCHECK_RET( tempContext, "wglCreateContext failed!" );
 
     wglMakeCurrent(win->GetHDC(), tempContext);
-    PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB
-            = (PFNWGLCREATECONTEXTATTRIBSARBPROC)
-            wglGetProcAddress("wglCreateContextAttribsARB");
+
+    typedef HGLRC(WINAPI * wglCreateContextAttribsARB_t)
+        (HDC hDC, HGLRC hShareContext, const int *attribList);
+
+    wxDEFINE_WGL_FUNC(wglCreateContextAttribsARB);
     wglMakeCurrent(win->GetHDC(), NULL);
     wglDeleteContext(tempContext);
 
@@ -809,11 +824,6 @@ bool wxGLCanvas::SwapBuffers()
     return true;
 }
 
-
-// this macro defines a variable of type "name_t" called "name" and initializes
-// it with the pointer to WGL function "name" (which may be NULL)
-#define wxDEFINE_WGL_FUNC(name) \
-    name##_t name = (name##_t)wglGetProcAddress(#name)
 
 /* static */
 bool wxGLCanvasBase::IsExtensionSupported(const char *extension)

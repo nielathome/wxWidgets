@@ -12,9 +12,6 @@
 
 #include "testprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/utils.h"
@@ -27,7 +24,7 @@
 
 #ifdef __WINDOWS__
     #include "wx/msw/registry.h"
-    #include <shlobj.h>
+    #include "wx/msw/wrapshl.h"
     #include "wx/msw/ole/oleutils.h"
     #include "wx/msw/private/comptr.h"
 #endif // __WINDOWS__
@@ -355,6 +352,7 @@ void FileNameTestCase::TestNormalize()
         { "b/../bar", wxPATH_NORM_DOTS, "bar", wxPATH_UNIX },
         { "c/../../quux", wxPATH_NORM_DOTS, "../quux", wxPATH_UNIX },
         { "/c/../../quux", wxPATH_NORM_DOTS, "/quux", wxPATH_UNIX },
+        { "../../quux", wxPATH_NORM_DOTS, "../../quux", wxPATH_UNIX },
 
         // test wxPATH_NORM_TILDE: notice that ~ is only interpreted specially
         // when it is the first character in the file name
@@ -665,7 +663,7 @@ void FileNameTestCase::TestCreateTempFileName()
         if (testData[n].shouldSucceed)
         {
             errDesc += "; path is " + path.ToStdString();
-        
+
             // test the place where the temp file has been created
             wxString expected = testData[n].expectedFolder;
             expected.Replace("$SYSTEM_TEMP", wxStandardPaths::Get().GetTempDir());
@@ -688,7 +686,7 @@ void FileNameTestCase::TestGetTimes()
     wxDateTime dtAccess, dtMod, dtCreate;
     CPPUNIT_ASSERT( fn.GetTimes(&dtAccess, &dtMod, &dtCreate) );
 
-    // make sure all retrieved dates are equal to the current date&time 
+    // make sure all retrieved dates are equal to the current date&time
     // with an accuracy up to 1 minute
     CPPUNIT_ASSERT(dtCreate.IsEqualUpTo(wxDateTime::Now(), wxTimeSpan(0,1)));
     CPPUNIT_ASSERT(dtMod.IsEqualUpTo(wxDateTime::Now(), wxTimeSpan(0,1)));
@@ -1059,8 +1057,9 @@ TEST_CASE("wxFileName::GetSizeSpecial", "[filename][linux][special-file]")
     INFO( "size of /proc/kcore=" << size );
     CHECK( size > 0 );
 
-    // All files in /sys seem to have size of 4KiB currently.
-    CHECK( wxFileName::GetSize("/sys/power/state") == 4096 );
+    // All files in /sys are one page in size, irrespectively of the size of
+    // their actual contents.
+    CHECK( wxFileName::GetSize("/sys/power/state") == sysconf(_SC_PAGESIZE) );
 }
 
 #endif // __LINUX__

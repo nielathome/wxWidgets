@@ -10,9 +10,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_XRC && wxUSE_COMBOBOX
 
@@ -66,6 +63,10 @@ wxObject *wxComboBoxXmlHandler::DoCreateResource()
             control->SetSelection(selection);
 
         SetupWindow(control);
+
+        const wxString hint = GetText(wxS("hint"));
+        if ( !hint.empty() )
+            control->SetHint(hint);
 
         strList.Clear();    // dump the strings
 

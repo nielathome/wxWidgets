@@ -12,9 +12,6 @@
 
 #include "testprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/wx.h"
@@ -139,8 +136,8 @@ class XrcTestCase : public CppUnit::TestCase
 public:
     XrcTestCase() {}
 
-    virtual void setUp() { CreateXrc(); }
-    virtual void tearDown() { wxRemoveFile(TEST_XRC_FILE); }
+    virtual void setUp() wxOVERRIDE { CreateXrc(); }
+    virtual void tearDown() wxOVERRIDE { wxRemoveFile(TEST_XRC_FILE); }
 
 private:
     CPPUNIT_TEST_SUITE( XrcTestCase );

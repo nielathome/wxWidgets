@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_LOG
 
@@ -603,9 +600,12 @@ void wxLog::SetComponentLevel(const wxString& component, wxLogLevel level)
 }
 
 /* static */
-wxLogLevel wxLog::GetComponentLevel(wxString component)
+wxLogLevel wxLog::GetComponentLevel(const wxString& componentOrig)
 {
     wxCRIT_SECT_LOCKER(lock, GetLevelsCS());
+
+    // Make a copy before modifying it in the loop.
+    wxString component = componentOrig;
 
     const wxStringToNumHashMap& componentLevels = GetComponentLevels();
     while ( !component.empty() )
@@ -1066,7 +1066,8 @@ static const wxChar* GetSysErrorMsg(wxChar* szBuf, size_t sizeBuf, unsigned long
     LPVOID lpMsgBuf;
     if ( ::FormatMessage
          (
-            FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+            FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+            FORMAT_MESSAGE_IGNORE_INSERTS,
             NULL,
             nErrCode,
             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
@@ -1075,9 +1076,11 @@ static const wxChar* GetSysErrorMsg(wxChar* szBuf, size_t sizeBuf, unsigned long
             NULL
          ) == 0 )
     {
+        wxLogDebug(wxS("FormatMessage failed with error 0x%lx in %s"),
+            GetLastError(), __WXFUNCTION__ ? __WXFUNCTION__ : "");
         // if this happens, something is seriously wrong, so don't use _() here
         // for safety
-        wxSprintf(szBuf, wxS("unknown error %lx"), nErrCode);
+        wxSprintf(szBuf, wxS("unknown error 0x%lx"), nErrCode);
         return szBuf;
     }
 
@@ -1108,7 +1111,7 @@ static const wxChar* GetSysErrorMsg(wxChar* szBuf, size_t sizeBuf, unsigned long
         char buffer[1024];
         char *errorMsg = buffer;
 
-#ifdef _GNU_SOURCE // GNU-specific strerror_r
+#if defined(__GLIBC__) && defined(_GNU_SOURCE) // GNU-specific strerror_r
         // GNU's strerror_r has a weird interface -- it doesn't
         // necessarily copy anything to the buffer given; use return
         // value instead.

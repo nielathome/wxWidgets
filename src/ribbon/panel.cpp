@@ -10,9 +10,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_RIBBON
 
@@ -135,7 +132,7 @@ void wxRibbonPanel::CommonInit(const wxString& label, const wxBitmap& icon, long
     }
 
     SetAutoLayout(true);
-    SetBackgroundStyle(wxBG_STYLE_CUSTOM);
+    SetBackgroundStyle(wxBG_STYLE_PAINT);
     SetMinSize(wxSize(20, 20));
 }
 
@@ -227,14 +224,14 @@ void wxRibbonPanel::AddChild(wxWindowBase *child)
     // for children of the window. The panel wants to be in the hovered state
     // whenever the mouse cursor is within its boundary, so the events need to
     // be attached to children too.
-    child->Connect(wxEVT_ENTER_WINDOW, wxMouseEventHandler(wxRibbonPanel::OnMouseEnterChild), NULL, this);
-    child->Connect(wxEVT_LEAVE_WINDOW, wxMouseEventHandler(wxRibbonPanel::OnMouseLeaveChild), NULL, this);
+    child->Bind(wxEVT_ENTER_WINDOW, &wxRibbonPanel::OnMouseEnterChild, this);
+    child->Bind(wxEVT_LEAVE_WINDOW, &wxRibbonPanel::OnMouseLeaveChild, this);
 }
 
 void wxRibbonPanel::RemoveChild(wxWindowBase *child)
 {
-    child->Disconnect(wxEVT_ENTER_WINDOW, wxMouseEventHandler(wxRibbonPanel::OnMouseEnterChild), NULL, this);
-    child->Disconnect(wxEVT_LEAVE_WINDOW, wxMouseEventHandler(wxRibbonPanel::OnMouseLeaveChild), NULL, this);
+    child->Unbind(wxEVT_ENTER_WINDOW, &wxRibbonPanel::OnMouseEnterChild, this);
+    child->Unbind(wxEVT_LEAVE_WINDOW, &wxRibbonPanel::OnMouseLeaveChild, this);
 
     wxRibbonControl::RemoveChild(child);
 }
@@ -352,7 +349,7 @@ wxSize wxRibbonPanel::GetBestSizeForParentSize(const wxSize& parentSize) const
         wxRibbonControl* control = wxDynamicCast(win, wxRibbonControl);
         if (control)
         {
-            wxClientDC temp_dc((wxRibbonPanel*) this);
+            wxClientDC temp_dc(const_cast<wxRibbonPanel*>(this));
             wxSize clientParentSize = m_art->GetPanelClientSize(temp_dc, this, parentSize, NULL);
             wxSize childSize = control->GetBestSizeForParentSize(clientParentSize);
             wxSize overallSize = m_art->GetPanelSize(temp_dc, this, childSize, NULL);
@@ -374,7 +371,7 @@ wxSize wxRibbonPanel::DoGetNextSmallerSize(wxOrientation direction,
 
     if(m_art != NULL)
     {
-        wxClientDC dc((wxRibbonPanel*) this);
+        wxClientDC dc(const_cast<wxRibbonPanel*>(this));
         wxSize child_relative = m_art->GetPanelClientSize(dc, this, relative_to, NULL);
         wxSize smaller(-1, -1);
         bool minimise = false;
@@ -495,7 +492,7 @@ wxSize wxRibbonPanel::DoGetNextLargerSize(wxOrientation direction,
 
     if(m_art != NULL)
     {
-        wxClientDC dc((wxRibbonPanel*) this);
+        wxClientDC dc(const_cast<wxRibbonPanel*>(this));
         wxSize child_relative = m_art->GetPanelClientSize(dc, this, relative_to, NULL);
         wxSize larger(-1, -1);
 
@@ -587,14 +584,14 @@ wxSize wxRibbonPanel::GetMinNotMinimisedSize() const
     // Ask sizer if present
     if(GetSizer())
     {
-        wxClientDC dc((wxRibbonPanel*) this);
+        wxClientDC dc(const_cast<wxRibbonPanel*>(this));
         return m_art->GetPanelSize(dc, this, GetPanelSizerMinSize(), NULL);
     }
     else if(GetChildren().GetCount() == 1)
     {
         // Common case of single child taking up the entire panel
         wxWindow* child = GetChildren().Item(0)->GetData();
-        wxClientDC dc((wxRibbonPanel*) this);
+        wxClientDC dc(const_cast<wxRibbonPanel*>(this));
         return m_art->GetPanelSize(dc, this, child->GetMinSize(), NULL);
     }
 
@@ -615,7 +612,7 @@ wxSize wxRibbonPanel::GetPanelSizerMinSize() const
          return GetSizer()->CalcMin();
     }
     // else use previously calculated m_smallest_unminimised_size
-    wxClientDC dc((wxRibbonPanel*) this);
+    wxClientDC dc(const_cast<wxRibbonPanel*>(this));
     return m_art->GetPanelClientSize(dc,
                                     this,
                                     m_smallest_unminimised_size,
@@ -636,14 +633,14 @@ wxSize wxRibbonPanel::DoGetBestSize() const
     // Ask sizer if present
     if( GetSizer())
     {
-        wxClientDC dc((wxRibbonPanel*) this);
+        wxClientDC dc(const_cast<wxRibbonPanel*>(this));
         return m_art->GetPanelSize(dc, this, GetPanelSizerBestSize(), NULL);
     }
     else if(GetChildren().GetCount() == 1)
     {
         // Common case of no sizer and single child taking up the entire panel
         wxWindow* child = GetChildren().Item(0)->GetData();
-        wxClientDC dc((wxRibbonPanel*) this);
+        wxClientDC dc(const_cast<wxRibbonPanel*>(this));
         return m_art->GetPanelSize(dc, this, child->GetBestSize(), NULL);
     }
 
@@ -670,6 +667,10 @@ bool wxRibbonPanel::Realize()
     }
 
     wxSize minimum_children_size(0, 0);
+
+    // Reset it before calling GetPanelSizerMinSize() below as it shouldn't use
+    // the old value, if we had any.
+    m_smallest_unminimised_size = wxDefaultSize;
 
     // Ask sizer if there is one present
     if(GetSizer())
@@ -906,9 +907,8 @@ void wxRibbonPanel::OnKillFocus(wxFocusEvent& evt)
         if(IsAncestorOf(this, receiver))
         {
             m_child_with_focus = receiver;
-            receiver->Connect(wxEVT_KILL_FOCUS,
-                wxFocusEventHandler(wxRibbonPanel::OnChildKillFocus),
-                NULL, this);
+            receiver->Bind(wxEVT_KILL_FOCUS,
+                &wxRibbonPanel::OnChildKillFocus, this);
         }
         else if(receiver == NULL || receiver != m_expanded_dummy)
         {
@@ -922,16 +922,16 @@ void wxRibbonPanel::OnChildKillFocus(wxFocusEvent& evt)
     if(m_child_with_focus == NULL)
         return; // Should never happen, but a check can't hurt
 
-    m_child_with_focus->Disconnect(wxEVT_KILL_FOCUS,
-      wxFocusEventHandler(wxRibbonPanel::OnChildKillFocus), NULL, this);
+    m_child_with_focus->Unbind(wxEVT_KILL_FOCUS,
+      &wxRibbonPanel::OnChildKillFocus, this);
     m_child_with_focus = NULL;
 
     wxWindow *receiver = evt.GetWindow();
     if(receiver == this || IsAncestorOf(this, receiver))
     {
         m_child_with_focus = receiver;
-        receiver->Connect(wxEVT_KILL_FOCUS,
-            wxFocusEventHandler(wxRibbonPanel::OnChildKillFocus), NULL, this);
+        receiver->Bind(wxEVT_KILL_FOCUS,
+            &wxRibbonPanel::OnChildKillFocus, this);
         evt.Skip();
     }
     else if(receiver == NULL || receiver != m_expanded_dummy)

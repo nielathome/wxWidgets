@@ -14,8 +14,6 @@ if(wxUSE_GUI AND wxBUILD_TESTS STREQUAL "ALL")
 
 add_subdirectory(drawing)
 add_subdirectory(gui)
+add_subdirectory(headers)
 
 endif()
-
-# Propagate variable(s) to parent scope
-set(wxTHIRD_PARTY_LIBRARIES ${wxTHIRD_PARTY_LIBRARIES} PARENT_SCOPE)

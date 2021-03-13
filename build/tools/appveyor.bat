@@ -1,11 +1,14 @@
+set MSBUILD_LOGGER=/logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 goto %TOOLSET%
 
 :msbuild
 cd build\msw
-msbuild /m:2 /v:n /p:Platform=%ARCH% /p:Configuration="%CONFIGURATION%" wx_vc12.sln
+msbuild /m:2 /v:n /p:Platform=%ARCH% /p:Configuration="%CONFIGURATION%" wx_vc12.sln %MSBUILD_LOGGER%
 cd ..\..\tests
-msbuild /m:2 /v:n /p:Platform=%ARCH% /p:Configuration="%CONFIGURATION%" test_vc12.sln
-msbuild /m:2 /v:n /p:Platform=%ARCH% /p:Configuration="%CONFIGURATION%" test_gui_vc12.sln
+msbuild /m:2 /v:n /p:Platform=%ARCH% /p:Configuration="%CONFIGURATION%" test_vc12.sln %MSBUILD_LOGGER%
+msbuild /m:2 /v:n /p:Platform=%ARCH% /p:Configuration="%CONFIGURATION%" test_gui_vc12.sln %MSBUILD_LOGGER%
+cd  ..\samples\minimal
+msbuild /m:2 /v:n /p:Platform=%ARCH% /p:Configuration="%CONFIGURATION%" minimal_vc12.sln %MSBUILD_LOGGER%
 goto :eof
 
 :nmake
@@ -13,6 +16,8 @@ cd build\msw
 call "C:\Program Files (x86)\Microsoft Visual Studio %VS%\VC\vcvarsall.bat" %ARCH%
 nmake -f makefile.vc BUILD=%BUILD%
 cd ..\..\tests
+nmake -f makefile.vc BUILD=%BUILD%
+cd  ..\samples\minimal
 nmake -f makefile.vc BUILD=%BUILD%
 goto :eof
 
@@ -51,30 +56,10 @@ bash -lc "g++ --version"
 bash -lc "LDFLAGS=-L/usr/lib/w32api ./configure --disable-optimise --disable-shared && make -j3 && make -j3 -C tests"
 goto :eof
 
-:cmake_msys
-if "%MSYSTEM%"=="" set MSYSTEM=MINGW32
-path C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin;%path%
-set GENERATOR=MSYS Makefiles
-set SKIPTESTS=1
+:cmake_qt
 set SKIPINSTALL=1
-set CMAKE_BUILD_FLAGS=-- -j3
-goto cmake
-
-:cmake_cygwin
-C:\cygwin\setup-x86.exe -qnNdO -R C:/cygwin -s http://cygwin.mirror.constant.com -l C:/cygwin/var/cache/setup -P libjpeg-devel -P libpng-devel -P libtiff-devel -P libexpat-devel
-path c:\cygwin\bin;%path%
-set GENERATOR=Unix Makefiles
-set SKIPTESTS=1
-set SKIPINSTALL=1
-set CMAKE_BUILD_FLAGS=-- -j3
-goto cmake
-
-:cmake_mingw
-:: CMake requires a path without sh (added by git on AppVeyor)
-path C:\Program Files (x86)\CMake\bin;C:\MinGW\bin
-set GENERATOR=MinGW Makefiles
-set SKIPTESTS=1
-set CMAKE_BUILD_FLAGS=-- -j3
+set QT5DIR="C:\Qt\5.11\msvc2015_64"
+set CMAKE_CONFIGURE_FLAGS=-DCMAKE_PREFIX_PATH=%QT5DIR% -DwxBUILD_TOOLKIT="qt" -DCMAKE_CXX_STANDARD=11
 goto cmake
 
 :cmake
@@ -83,6 +68,9 @@ cmake --version
 
 if "%SHARED%"=="" set SHARED=ON
 if "%CONFIGURATION%"=="" set CONFIGURATION=Release
+echo.%GENERATOR% | findstr /C:"Visual Studio">nul && (
+    set CMAKE_LOGGER=%MSBUILD_LOGGER%
+)
 
 if "%SKIPTESTS%"=="1" (
     set BUILD_TESTS=OFF
@@ -96,12 +84,12 @@ set WX_INSTALL_PATH=%HOMEDRIVE%%HOMEPATH%\wx_install_target
 mkdir %WX_INSTALL_PATH%
 mkdir build_cmake
 pushd build_cmake
-cmake -G "%GENERATOR%" -DwxBUILD_TESTS=%BUILD_TESTS% -DCMAKE_INSTALL_PREFIX=%WX_INSTALL_PATH% -DwxBUILD_SHARED=%SHARED% %CMAKE_CONFIGURE_FLAGS% ..
+cmake -G "%GENERATOR%" -DwxBUILD_TESTS=%BUILD_TESTS% -DwxBUILD_SAMPLES=SOME -DCMAKE_INSTALL_PREFIX=%WX_INSTALL_PATH% -DwxBUILD_SHARED=%SHARED% %CMAKE_CONFIGURE_FLAGS% ..
 if ERRORLEVEL 1 goto error
 echo.
 echo --- Starting the build
 echo.
-cmake --build . --config %CONFIGURATION% %CMAKE_BUILD_FLAGS%
+cmake --build . --config %CONFIGURATION% -- %CMAKE_NATIVE_FLAGS% %CMAKE_LOGGER%
 if ERRORLEVEL 1 goto error
 
 :: Package binaries as artifact
@@ -115,7 +103,7 @@ if NOT "%SKIPINSTALL%"=="1" (
     echo.
     echo --- Installing
     echo.
-    cmake --build . --config %CONFIGURATION% --target install
+    cmake --build . --config %CONFIGURATION% --target install -- %CMAKE_LOGGER%
     if ERRORLEVEL 1 goto error
     popd
 
@@ -129,9 +117,8 @@ if NOT "%SKIPINSTALL%"=="1" (
     cmake -G "%GENERATOR%" ..\samples\minimal
     if ERRORLEVEL 1 goto error
     echo --- Building minimal sample with installed library
-    cmake --build . --config %CONFIGURATION%
+    cmake --build . --config %CONFIGURATION% -- %CMAKE_LOGGER%
     if ERRORLEVEL 1 goto error
-    popd
 )
 popd
 

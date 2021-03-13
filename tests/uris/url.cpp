@@ -12,9 +12,6 @@
 
 #include "testprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/wx.h"
@@ -22,6 +19,8 @@
 
 #include "wx/url.h"
 #include "wx/mstream.h"
+#include "wx/scopedptr.h"
+#include "wx/utils.h"
 
 // ----------------------------------------------------------------------------
 // test class
@@ -30,7 +29,7 @@
 class URLTestCase : public CppUnit::TestCase
 {
 public:
-    URLTestCase(); 
+    URLTestCase();
     ~URLTestCase();
 
 private:
@@ -73,7 +72,16 @@ void URLTestCase::GetInputStream()
     wxURL url("http://www.wxwidgets.org/assets/img/header-logo.png");
     CPPUNIT_ASSERT_EQUAL(wxURL_NOERR, url.GetError());
 
-    wxInputStream *in_stream = url.GetInputStream();
+    wxScopedPtr<wxInputStream> in_stream(url.GetInputStream());
+    if ( !in_stream && IsAutomaticTest() )
+    {
+        // Sometimes the connection fails during CI runs, try to connect once
+        // again if this happens in the hope it was just a transient error.
+        wxSleep(3);
+        WARN("Connection to www.wxwidgets.org failed, retrying...");
+        in_stream.reset(url.GetInputStream());
+    }
+
     CPPUNIT_ASSERT(in_stream);
     CPPUNIT_ASSERT(in_stream->IsOk());
 
@@ -81,9 +89,6 @@ void URLTestCase::GetInputStream()
     CPPUNIT_ASSERT(in_stream->Read(ostream).GetLastError() == wxSTREAM_EOF);
 
     CPPUNIT_ASSERT_EQUAL(17334, ostream.GetSize());
-
-    // we have to delete the object created by GetInputStream()
-    delete in_stream;
 }
 
 void URLTestCase::CopyAndAssignment()
@@ -123,7 +128,9 @@ void URLTestCase::CopyAndAssignment()
     CPPUNIT_ASSERT(url1 == url2);
 
     // assignment to self
+    wxCLANG_WARNING_SUPPRESS(self-assign-overloaded)
     url2 = url2;
+    wxCLANG_WARNING_RESTORE(self-assign-overloaded)
 
     // check for destructor (with base pointer!)
     puri = new wxURL();

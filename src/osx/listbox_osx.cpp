@@ -248,7 +248,6 @@ wxSize wxListBox::DoGetBestSize() const
 {
     int lbWidth = 100;  // some defaults
     int lbHeight;
-    int wLine;
 
     {
         wxClientDC dc(const_cast<wxListBox*>(this));
@@ -261,8 +260,7 @@ wxSize wxListBox::DoGetBestSize() const
 
             wxCoord width, height ;
             dc.GetTextExtent( str , &width, &height);
-            wLine = width ;
-            lbWidth = wxMax( lbWidth, wLine );
+            lbWidth = wxMax( lbWidth, width );
         }
 
         // Add room for the scrollbar
@@ -282,11 +280,6 @@ wxSize wxListBox::DoGetBestSize() const
     }
 
     return wxSize( lbWidth, lbHeight );
-}
-
-void wxListBox::Refresh(bool eraseBack, const wxRect *rect)
-{
-    wxControl::Refresh( eraseBack, rect );
 }
 
 // Some custom controls depend on this
@@ -418,6 +411,40 @@ void wxListBox::HandleLineEvent( unsigned int n, bool doubleClick )
     event.SetInt( n );
     event.SetExtraLong( 1 );
     HandleWindowEvent(event);
+}
+
+void wxListBox::MacHandleSelectionChange(int row)
+{
+    if ( m_blockEvents )
+        return;
+
+    // Correct notification events for multiselection list.
+    if ( HasMultipleSelection() )
+    {
+        CalcAndSendEvent();
+        return;
+    }
+
+    // OS X can select an item below the last item. In that case keep the old
+    // selection because in wxWidgets API there is no notification event for
+    // removing the selection from a single-selection list box.
+    //
+    // Otherwise call DoChangeSingleSelection so that m_oldSelections is
+    // updated with the correct value before it's possible used later.
+    const int count = static_cast<int>(GetCount());
+    if ( row < 0 || row >= count )
+    {
+        if ( !m_oldSelections.empty() )
+        {
+            const int oldsel = m_oldSelections[0];
+            if ( oldsel >= 0 && oldsel < count )
+                SetSelection(oldsel);
+        }
+    }
+    else if ( DoChangeSingleSelection(row) )
+    {
+        HandleLineEvent( row, false );
+    }
 }
 
 //

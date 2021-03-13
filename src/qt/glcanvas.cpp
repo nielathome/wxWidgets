@@ -14,6 +14,13 @@
 
 #include <QtOpenGL/QGLWidget>
 
+#if defined(__VISUALC__)
+    #pragma message("OpenGL support is not implemented in wxQt")
+#else
+    #warning "OpenGL support is not implemented in wxQt"
+#endif
+wxGCC_WARNING_SUPPRESS(unused-parameter)
+
 class wxQtGLWidget : public wxQtEventSignalHandler< QGLWidget, wxGLCanvas >
 {
 public:
@@ -25,13 +32,13 @@ public:
         }
 
 protected:
-    virtual void showEvent ( QShowEvent * event );
-    virtual void hideEvent ( QHideEvent * event );
-    virtual void resizeEvent ( QResizeEvent * event );
-    virtual void paintEvent ( QPaintEvent * event );
+    virtual void showEvent ( QShowEvent * event ) wxOVERRIDE;
+    virtual void hideEvent ( QHideEvent * event ) wxOVERRIDE;
+    virtual void resizeEvent ( QResizeEvent * event ) wxOVERRIDE;
+    virtual void paintEvent ( QPaintEvent * event ) wxOVERRIDE;
 
-    virtual void resizeGL(int w, int h);
-    virtual void paintGL();
+    virtual void resizeGL(int w, int h) wxOVERRIDE;
+    virtual void paintGL() wxOVERRIDE;
 };
 
 void wxQtGLWidget::showEvent ( QShowEvent * event )
@@ -62,7 +69,7 @@ void wxQtGLWidget::resizeGL(int w, int h)
 
 void wxQtGLWidget::paintGL()
 {
-    wxPaintEvent event( GetHandler()->GetId() );
+    wxPaintEvent event( GetHandler() );
     EmitEvent(event);
 }
 
@@ -329,7 +336,7 @@ void wxGLAttributes::AddDefaultsForWXBefore31()
 
 wxIMPLEMENT_CLASS(wxGLContext, wxWindow);
 
-wxGLContext::wxGLContext(wxGLCanvas *WXUNUSED(win), const wxGLContext* WXUNUSED(other))
+wxGLContext::wxGLContext(wxGLCanvas *WXUNUSED(win), const wxGLContext* WXUNUSED(other), const wxGLContextAttrs *WXUNUSED(ctxAttrs))
 {
 //    m_glContext = win->GetHandle()->context();
 }
@@ -348,6 +355,18 @@ bool wxGLContext::SetCurrent(const wxGLCanvas&) const
 wxIMPLEMENT_CLASS(wxGLCanvas, wxWindow);
 
 wxGLCanvas::wxGLCanvas(wxWindow *parent,
+                       const wxGLAttributes& dispAttrs,
+                       wxWindowID id,
+                       const wxPoint& pos,
+                       const wxSize& size,
+                       long style,
+                       const wxString& name,
+                       const wxPalette& palette)
+{
+    Create(parent, dispAttrs, id, pos, size, style, name, palette);
+}
+
+wxGLCanvas::wxGLCanvas(wxWindow *parent,
                        wxWindowID id,
                        const int *attribList,
                        const wxPoint& pos,
@@ -357,6 +376,19 @@ wxGLCanvas::wxGLCanvas(wxWindow *parent,
                        const wxPalette& palette)
 {
     Create(parent, id, pos, size, style, name, attribList, palette);
+}
+
+bool wxGLCanvas::Create(wxWindow *parent,
+                        const wxGLAttributes& dispAttrs,
+                        wxWindowID id,
+                        const wxPoint& pos,
+                        const wxSize& size,
+                        long style,
+                        const wxString& name,
+                        const wxPalette& palette)
+{
+    wxLogError("Missing implementation of " + wxString(__FUNCTION__));
+    return false;
 }
 
 bool wxGLCanvas::Create(wxWindow *parent,
@@ -507,6 +539,24 @@ wxGLCanvasBase::IsDisplaySupported(const int *attribList)
         return false;
 
     return QGLWidget(format).isValid();
+}
+
+/* static */
+bool
+wxGLCanvasBase::IsDisplaySupported(const wxGLAttributes& dispAttrs)
+{
+    wxLogError("Missing implementation of " + wxString(__FUNCTION__));
+    return false;
+}
+
+// ----------------------------------------------------------------------------
+// wxGLApp
+// ----------------------------------------------------------------------------
+
+bool wxGLApp::InitGLVisual(const int *attribList)
+{
+    wxLogError("Missing implementation of " + wxString(__FUNCTION__));
+    return false;
 }
 
 #endif // wxUSE_GLCANVAS

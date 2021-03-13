@@ -21,18 +21,14 @@
 #include "wx/osx/private.h"
 
 #include <WebKit/WebKit.h>
+#if __MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_15
 #include <WebKit/HIWebView.h>
 #include <WebKit/CarbonUtils.h>
+#endif
 
 #include "wx/html/webkit.h"
 
 #define DEBUG_WEBKIT_SIZING 0
-
-#if defined(MAC_OS_X_VERSION_10_11) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_11)
-    #define wxWEBKIT_PROTOCOL_SINCE_10_11(proto) < proto >
-#else
-    #define wxWEBKIT_PROTOCOL_SINCE_10_11(proto)
-#endif
 
 extern WXDLLEXPORT_DATA(const char) wxWebKitCtrlNameStr[] = "webkitctrl";
 
@@ -93,30 +89,6 @@ wxWebKitNewWindowEvent::wxWebKitNewWindowEvent( wxWindow* win )
     }
 }
 
-
-
-//---------------------------------------------------------
-// helper functions for NSString<->wxString conversion
-//---------------------------------------------------------
-
-inline wxString wxStringWithNSString(NSString *nsstring)
-{
-#if wxUSE_UNICODE
-    return wxString([nsstring UTF8String], wxConvUTF8);
-#else
-    return wxString([nsstring lossyCString]);
-#endif // wxUSE_UNICODE
-}
-
-inline NSString* wxNSStringWithWxString(const wxString &wxstring)
-{
-#if wxUSE_UNICODE
-    return [NSString stringWithUTF8String: wxstring.mb_str(wxConvUTF8)];
-#else
-    return [NSString stringWithCString: wxstring.c_str() length:wxstring.Len()];
-#endif // wxUSE_UNICODE
-}
-
 inline int wxNavTypeFromWebNavType(int type){
     if (type == WebNavigationTypeLinkClicked)
         return wxWEBKIT_NAV_LINK_CLICKED;
@@ -136,7 +108,7 @@ inline int wxNavTypeFromWebNavType(int type){
     return wxWEBKIT_NAV_OTHER;
 }
 
-@interface MyFrameLoadMonitor : NSObject wxWEBKIT_PROTOCOL_SINCE_10_11(WebFrameLoadDelegate)
+@interface MyFrameLoadMonitor : NSObject<WebFrameLoadDelegate>
 {
     wxWebKitCtrl* webKitWindow;
 }
@@ -145,7 +117,7 @@ inline int wxNavTypeFromWebNavType(int type){
 
 @end
 
-@interface MyPolicyDelegate : NSObject wxWEBKIT_PROTOCOL_SINCE_10_11(WebPolicyDelegate)
+@interface MyPolicyDelegate : NSObject<WebPolicyDelegate>
 {
     wxWebKitCtrl* webKitWindow;
 }
@@ -154,7 +126,7 @@ inline int wxNavTypeFromWebNavType(int type){
 
 @end
 
-@interface MyUIDelegate : NSObject wxWEBKIT_PROTOCOL_SINCE_10_11(WebUIDelegate)
+@interface MyUIDelegate : NSObject<WebUIDelegate>
 {
     wxWebKitCtrl* webKitWindow;
 }

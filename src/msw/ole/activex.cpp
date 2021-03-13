@@ -18,9 +18,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_ACTIVEX
 
@@ -170,7 +167,7 @@ static void PixelsToHimetric(SIZEL &sz)
         logX = GetDeviceCaps(dc, LOGPIXELSX);
         logY = GetDeviceCaps(dc, LOGPIXELSY);
         ReleaseDC(NULL, dc);
-    };
+    }
 
 #define HIMETRIC_INCH   2540
 #define CONVERT(x, logpixels)   wxMulDivInt32(HIMETRIC_INCH, (x), (logpixels))
@@ -429,7 +426,7 @@ public:
            //
            // Result of several hours and days of bug hunting -
            // this is called by an object when it wants to resize
-           // itself to something different then our parent window -
+           // itself to something different from our parent window -
            // don't let it :)
            //
 //            m_window->m_oleInPlaceObject->SetObjectRects(
@@ -768,7 +765,7 @@ namespace
 const int invalid_entry_marker = 0;
 }
 
-wxVariant wxActiveXEvents::ms_invalidEntryMarker((void*)&invalid_entry_marker);
+wxVariant wxActiveXEvents::ms_invalidEntryMarker(const_cast<void*>(static_cast<const void*>(&invalid_entry_marker)));
 
 size_t wxActiveXEvent::ParamCount() const
 {
@@ -1131,14 +1128,9 @@ void wxActiveXContainer::CreateActiveX(REFIID iid, IUnknown* pUnk)
         wxWindow* pWnd = m_realparent;
         int id = m_realparent->GetId();
 
-        pWnd->Connect(id, wxEVT_SIZE,
-            wxSizeEventHandler(wxActiveXContainer::OnSize), 0, this);
-//        this->Connect(GetId(), wxEVT_PAINT,
-//            wxPaintEventHandler(wxActiveXContainer::OnPaint), 0, this);
-        pWnd->Connect(id, wxEVT_SET_FOCUS,
-            wxFocusEventHandler(wxActiveXContainer::OnSetFocus), 0, this);
-        pWnd->Connect(id, wxEVT_KILL_FOCUS,
-            wxFocusEventHandler(wxActiveXContainer::OnKillFocus), 0, this);
+        pWnd->Bind(wxEVT_SIZE, &wxActiveXContainer::OnSize, this, id);
+        pWnd->Bind(wxEVT_SET_FOCUS, &wxActiveXContainer::OnSetFocus, this, id);
+        pWnd->Bind(wxEVT_KILL_FOCUS, &wxActiveXContainer::OnKillFocus, this, id);
     }
 }
 

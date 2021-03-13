@@ -19,9 +19,6 @@
 // for compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_SEARCHCTRL
 
@@ -68,7 +65,6 @@ class SearchCtrlWidgetsPage : public WidgetsPage
 {
 public:
     SearchCtrlWidgetsPage(WidgetsBookCtrl *book, wxImageList *imaglist);
-    virtual ~SearchCtrlWidgetsPage(){};
 
     virtual wxWindow *GetWidget() const wxOVERRIDE { return m_srchCtrl; }
     virtual wxTextEntryBase *GetTextEntry() const wxOVERRIDE { return m_srchCtrl; }
@@ -88,9 +84,6 @@ protected:
 
     void OnSearch(wxCommandEvent& event);
     void OnSearchCancel(wxCommandEvent& event);
-
-    void OnSetFocus(wxFocusEvent& event);
-    void OnKillFocus(wxFocusEvent& event);
 
     wxMenu* CreateTestMenu();
 
@@ -128,13 +121,13 @@ wxEND_EVENT_TABLE()
 // implementation
 // ============================================================================
 
-#if defined(__WXMAC__)
+#if defined(__WXMAC__) || defined(__WXGTK20__)
     #define FAMILY_CTRLS NATIVE_CTRLS
 #else
     #define FAMILY_CTRLS GENERIC_CTRLS
 #endif
 
-IMPLEMENT_WIDGETS_PAGE(SearchCtrlWidgetsPage, wxT("SearchCtrl"),
+IMPLEMENT_WIDGETS_PAGE(SearchCtrlWidgetsPage, "SearchCtrl",
                        FAMILY_CTRLS | EDITABLE_CTRLS | ALL_CTRLS);
 
 SearchCtrlWidgetsPage::SearchCtrlWidgetsPage(WidgetsBookCtrl *book,
@@ -151,22 +144,22 @@ void SearchCtrlWidgetsPage::CreateContent()
 
 
     wxSizer* box = new wxStaticBoxSizer(
-        new wxStaticBox(this, -1, wxT("Options")),
+        new wxStaticBox(this, -1, "Options"),
         wxVERTICAL);
 
-    m_searchBtnCheck = new wxCheckBox(this, ID_SEARCH_CB, wxT("Search button"));
-    m_cancelBtnCheck = new wxCheckBox(this, ID_CANCEL_CB, wxT("Cancel button"));
-    m_menuBtnCheck   = new wxCheckBox(this, ID_MENU_CB,   wxT("Search menu"));
+    m_searchBtnCheck = new wxCheckBox(this, ID_SEARCH_CB, "Search button");
+    m_cancelBtnCheck = new wxCheckBox(this, ID_CANCEL_CB, "Cancel button");
+    m_menuBtnCheck   = new wxCheckBox(this, ID_MENU_CB,   "Search menu");
 
     m_searchBtnCheck->SetValue(true);
 
-    box->Add(m_searchBtnCheck, 0, wxALL, 5);
-    box->Add(m_cancelBtnCheck, 0, wxALL, 5);
-    box->Add(m_menuBtnCheck,   0, wxALL, 5);
+    box->Add(m_searchBtnCheck, wxSizerFlags().Border());
+    box->Add(m_cancelBtnCheck, wxSizerFlags().Border());
+    box->Add(m_menuBtnCheck,   wxSizerFlags().Border());
 
     wxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
-    sizer->Add(box, 0,  wxALL|wxEXPAND, 15);
-    sizer->Add(m_srchCtrl, 0, wxALL|wxALIGN_CENTER, 15);
+    sizer->Add(box, wxSizerFlags().Expand().TripleBorder());
+    sizer->Add(m_srchCtrl, wxSizerFlags().Centre().TripleBorder());
 
     SetSizer(sizer);
 }
@@ -176,13 +169,10 @@ void SearchCtrlWidgetsPage::CreateControl()
     if (m_srchCtrl)
         m_srchCtrl->Destroy();
 
-    int style = 0;
+    long style = GetAttrs().m_defaultFlags;
 
     m_srchCtrl = new wxSearchCtrl(this, -1, wxEmptyString, wxDefaultPosition,
-                                  wxSize(150, -1), style);
-
-    m_srchCtrl->Bind(wxEVT_SET_FOCUS, &SearchCtrlWidgetsPage::OnSetFocus, this);
-    m_srchCtrl->Bind(wxEVT_KILL_FOCUS, &SearchCtrlWidgetsPage::OnKillFocus, this);
+                                  FromDIP(wxSize(150, -1)), style);
 }
 
 void SearchCtrlWidgetsPage::RecreateWidget()
@@ -198,20 +188,14 @@ wxMenu* SearchCtrlWidgetsPage::CreateTestMenu()
 {
     wxMenu* menu = new wxMenu;
     const int SEARCH_MENU_SIZE = 5;
-    wxMenuItem* menuItem = menu->Append(wxID_ANY, wxT("Recent Searches"), wxT(""), wxITEM_NORMAL);
+    wxMenuItem* menuItem = menu->Append(wxID_ANY, "Recent Searches", "", wxITEM_NORMAL);
     menuItem->Enable(false);
     for ( int i = 0; i < SEARCH_MENU_SIZE; i++ )
     {
-        wxString itemText = wxString::Format(wxT("item %i"),i);
-        wxString tipText = wxString::Format(wxT("tip %i"),i);
+        wxString itemText = wxString::Format("item %i",i);
+        wxString tipText = wxString::Format("tip %i",i);
         menu->Append(ID_SEARCHMENU+i, itemText, tipText, wxITEM_NORMAL);
     }
-//     target->Connect(
-//         ID_SEARCHMENU,
-//         ID_SEARCHMENU+SEARCH_MENU_SIZE,
-//         wxEVT_MENU,
-//         wxCommandEventHandler(MySearchCtrl::OnSearchMenu)
-//         );
     return menu;
 }
 
@@ -259,20 +243,6 @@ void SearchCtrlWidgetsPage::OnSearch(wxCommandEvent& event)
 void SearchCtrlWidgetsPage::OnSearchCancel(wxCommandEvent& event)
 {
     wxLogMessage("Cancel button pressed.");
-
-    event.Skip();
-}
-
-void SearchCtrlWidgetsPage::OnSetFocus(wxFocusEvent& event)
-{
-    wxLogMessage("Search control got focus");
-
-    event.Skip();
-}
-
-void SearchCtrlWidgetsPage::OnKillFocus(wxFocusEvent& event)
-{
-    wxLogMessage("Search control lost focus");
 
     event.Skip();
 }

@@ -10,10 +10,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
-
 #if wxUSE_GTKPRINT
 
 #include "wx/gtk/print.h"
@@ -34,7 +30,7 @@
 #include "wx/paper.h"
 #include "wx/modalhook.h"
 
-#include <gtk/gtk.h>
+#include "wx/gtk/private/wrapgtk.h"
 
 #if GTK_CHECK_VERSION(2,14,0)
 #include <gtk/gtkunixprint.h>
@@ -46,7 +42,6 @@
 wxFORCE_LINK_THIS_MODULE(gtk_print)
 
 #include "wx/gtk/private/object.h"
-#include "wx/gtk/private/gtk2-compat.h"
 
 // Useful to convert angles from degrees to radians.
 static const double DEG2RAD  = M_PI / 180.0;
@@ -215,7 +210,7 @@ static GtkPaperSize* wxGetGtkPaperSize(wxPaperSize paperId, const wxSize& size)
     // last resort, use a custom GtkPaperSize
     const wxString title = _("Custom size");
     char name[40];
-    g_snprintf(name, sizeof(name), "custom_%ux%u", size.x, size.y);
+    g_snprintf(name, sizeof(name), "custom_%dx%d", size.x, size.y);
     return gtk_paper_size_new_custom(
         name, title.utf8_str(), size.x, size.y, GTK_UNIT_MM);
 }
@@ -1024,19 +1019,8 @@ void wxGtkPrinter::BeginPrint(wxPrintout *printout, GtkPrintOperation *operation
         return;
     }
 
-    printout->SetPPIScreen(wxGetDisplayPPI());
-    printout->SetPPIPrinter( printDC->GetResolution(),
-                             printDC->GetResolution() );
+    printout->SetUp(*m_dc);
 
-    printout->SetDC(m_dc);
-
-    int w, h;
-    m_dc->GetSize(&w, &h);
-    printout->SetPageSizePixels((int)w, (int)h);
-    printout->SetPaperRectPixels(wxRect(0, 0, w, h));
-    int mw, mh;
-    m_dc->GetSizeMM(&mw, &mh);
-    printout->SetPageSizeMM((int)mw, (int)mh);
     printout->OnPreparePrinting();
 
     // Get some parameters from the printout, if defined.
@@ -1222,9 +1206,8 @@ wxIMPLEMENT_ABSTRACT_CLASS(wxGtkPrinterDCImpl, wxDCImpl);
 
 wxGtkPrinterDCImpl::wxGtkPrinterDCImpl(wxPrinterDC *owner, const wxPrintData& data)
                   : wxDCImpl( owner )
+    , m_printData(data)
 {
-    m_printData = data;
-
     wxGtkPrintNativeData *native =
         (wxGtkPrintNativeData*) m_printData.GetNativeData();
 
@@ -1712,7 +1695,7 @@ void wxGtkPrinterDCImpl::DoDrawSpline(const wxPointList *points)
 {
     SetPen (m_pen);
 
-    double c, d, x1, y1, x2, y2, x3, y3;
+    double c, d, x1, y1, x3, y3;
     wxPoint *p, *q;
 
     wxPointList::compatibility_iterator node = points->GetFirst();
@@ -1739,6 +1722,7 @@ void wxGtkPrinterDCImpl::DoDrawSpline(const wxPointList *points)
     node = node->GetNext();
     while (node)
     {
+        double x2, y2;
         q = node->GetData();
 
         x1 = x3;

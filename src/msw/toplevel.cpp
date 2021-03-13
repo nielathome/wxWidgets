@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #include "wx/toplevel.h"
 
@@ -37,7 +34,7 @@
     #include "wx/module.h"
 #endif //WX_PRECOMP
 
-#include "wx/dynlib.h"
+#include "wx/scopeguard.h"
 #include "wx/tooltip.h"
 
 #include "wx/msw/private.h"
@@ -50,7 +47,7 @@
 
 // NB: wxDlgProc must be defined here and not in dialog.cpp because the latter
 //     is not included by wxUniv build which does need wxDlgProc
-LONG APIENTRY
+INT_PTR APIENTRY
 wxDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 
 // ----------------------------------------------------------------------------
@@ -94,8 +91,7 @@ wxEND_EVENT_TABLE()
 
 void wxTopLevelWindowMSW::Init()
 {
-    m_iconized =
-    m_maximizeOnShow = false;
+    m_showCmd = SW_SHOWNORMAL;
 
     // Data to save/restore when calling ShowFullScreen
     m_fsStyle = 0;
@@ -291,6 +287,22 @@ WXLRESULT wxTopLevelWindowMSW::MSWWindowProc(WXUINT message, WXWPARAM wParam, WX
 
                     DoRestoreLastFocus();
                 }
+                else if ( id == SC_KEYMENU )
+                {
+                    // Alt-Backspace is understood as an accelerator for "Undo"
+                    // by the native EDIT control, but pressing it results in a
+                    // beep by default when the resulting SC_KEYMENU is handled
+                    // by DefWindowProc(), so pretend to handle it ourselves if
+                    // we're editing a text control to avoid the annoying beep.
+                    if ( lParam == VK_BACK )
+                    {
+                        if ( wxWindow* const focus = FindFocus() )
+                        {
+                            if ( focus->WXGetTextEntry() )
+                                processed = true;
+                        }
+                    }
+                }
 
 #ifndef __WXUNIVERSAL__
                 // We need to generate events for the custom items added to the
@@ -326,7 +338,7 @@ bool wxTopLevelWindowMSW::CreateDialog(const void *dlgTemplate,
     m_hWnd = (WXHWND)::CreateDialogIndirect
                        (
                         wxGetInstance(),
-                        (DLGTEMPLATE*)dlgTemplate,
+                        static_cast<const DLGTEMPLATE*>(dlgTemplate),
                         parent ? GetHwndOf(parent) : NULL,
                         (DLGPROC)wxDlgProc
                        );
@@ -420,8 +432,7 @@ bool wxTopLevelWindowMSW::Create(wxWindow *parent,
     // non-TLW windows
     wxTopLevelWindows.Append(this);
 
-    bool ret = CreateBase(parent, id, pos, sizeReal, style, name);
-    if ( !ret )
+    if ( !CreateBase(parent, id, pos, sizeReal, style, name) )
         return false;
 
     if ( parent )
@@ -438,6 +449,8 @@ bool wxTopLevelWindowMSW::Create(wxWindow *parent,
         // don't use DS_SETFONT we don't need the fourth WORD for the font)
         static const int dlgsize = sizeof(DLGTEMPLATE) + (sizeof(WORD) * 3);
         DLGTEMPLATE *dlgTemplate = (DLGTEMPLATE *)malloc(dlgsize);
+        wxON_BLOCK_EXIT1(free, dlgTemplate);
+
         memset(dlgTemplate, 0, dlgsize);
 
         // these values are arbitrary, they won't be used normally anyhow
@@ -469,29 +482,29 @@ bool wxTopLevelWindowMSW::Create(wxWindow *parent,
         if ( style & (wxRESIZE_BORDER | wxCAPTION) )
             dlgTemplate->style |= DS_MODALFRAME;
 
-        ret = CreateDialog(dlgTemplate, title, pos, sizeReal);
-        free(dlgTemplate);
+        if ( !CreateDialog(dlgTemplate, title, pos, sizeReal) )
+            return false;
     }
     else // !dialog
     {
-        ret = CreateFrame(title, pos, sizeReal);
+        if ( !CreateFrame(title, pos, sizeReal) )
+            return false;
     }
 
-    if ( ret && !(GetWindowStyleFlag() & wxCLOSE_BOX) )
+    if ( !(GetWindowStyleFlag() & wxCLOSE_BOX) )
     {
         EnableCloseButton(false);
     }
+
+    InheritAttributes();
 
     // for standard dialogs the dialog manager generates WM_CHANGEUISTATE
     // itself but for custom windows we have to do it ourselves in order to
     // make the keyboard indicators (such as underlines for accelerators and
     // focus rectangles) work under Win2k+
-    if ( ret )
-    {
-        MSWUpdateUIState(UIS_INITIALIZE);
-    }
+    MSWUpdateUIState(UIS_INITIALIZE);
 
-    return ret;
+    return true;
 }
 
 wxTopLevelWindowMSW::~wxTopLevelWindowMSW()
@@ -499,19 +512,6 @@ wxTopLevelWindowMSW::~wxTopLevelWindowMSW()
     delete m_menuSystem;
 
     SendDestroyEvent();
-
-    // after destroying an owned window, Windows activates the next top level
-    // window in Z order but it may be different from our owner (to reproduce
-    // this simply Alt-TAB to another application and back before closing the
-    // owned frame) whereas we always want to yield activation to our parent
-    if ( HasFlag(wxFRAME_FLOAT_ON_PARENT) )
-    {
-        wxWindow *parent = GetParent();
-        if ( parent )
-        {
-            ::BringWindowToTop(GetHwndOf(parent));
-        }
-    }
 }
 
 // ----------------------------------------------------------------------------
@@ -520,15 +520,27 @@ wxTopLevelWindowMSW::~wxTopLevelWindowMSW()
 
 void wxTopLevelWindowMSW::DoShowWindow(int nShowCmd)
 {
-    ::ShowWindow(GetHwnd(), nShowCmd);
-
-    // Hiding the window doesn't change its iconized state.
-    if ( nShowCmd != SW_HIDE )
+    // After hiding or minimizing an owned window, Windows activates the next
+    // top level window in Z order but it may be different from our owner (to
+    // reproduce this simply Alt-TAB to another application and back before
+    // closing the owned frame) whereas we always want to yield activation to
+    // our parent, so do it explicitly _before_ yielding activation.
+    switch ( nShowCmd )
     {
-        // Otherwise restoring, maximizing or showing the window normally also
-        // makes it not iconized and only minimizing it does make it iconized.
-        m_iconized = nShowCmd == SW_MINIMIZE;
+        case SW_HIDE:
+        case SW_MINIMIZE:
+            if ( HasFlag(wxFRAME_FLOAT_ON_PARENT) )
+            {
+                wxWindow *parent = GetParent();
+                if ( parent )
+                {
+                    ::BringWindowToTop(GetHwndOf(parent));
+                }
+            }
+            break;
     }
+
+    ::ShowWindow(GetHwnd(), nShowCmd);
 
 #if wxUSE_TOOLTIPS
     // Don't leave a tooltip hanging around if TLW is hidden now.
@@ -541,7 +553,12 @@ void wxTopLevelWindowMSW::ShowWithoutActivating()
     if ( !wxWindowBase::Show(true) )
         return;
 
-    DoShowWindow(SW_SHOWNA);
+    // We can't show the window in a maximized state without activating it, so
+    // the sequence of hiding the window, calling Maximize() and this function
+    // will end up with the window not being maximized -- but this is arguably
+    // better than activating it and is compatible with the historical
+    // behaviour of this function.
+    DoShowWindow(m_showCmd == SW_MINIMIZE ? SW_SHOWMINNOACTIVE : SW_SHOWNA);
 }
 
 bool wxTopLevelWindowMSW::Show(bool show)
@@ -553,18 +570,10 @@ bool wxTopLevelWindowMSW::Show(bool show)
     int nShowCmd;
     if ( show )
     {
-        if ( m_maximizeOnShow )
+        // If we need to minimize or maximize the window, do it now.
+        if ( m_showCmd == SW_MAXIMIZE || m_showCmd == SW_MINIMIZE )
         {
-            // show and maximize
-            nShowCmd = SW_MAXIMIZE;
-
-            m_maximizeOnShow = false;
-        }
-        else if ( m_iconized )
-        {
-            // We were iconized while we were hidden, so now we need to show
-            // the window in iconized state.
-            nShowCmd = SW_MINIMIZE;
+            nShowCmd = m_showCmd;
         }
         else if ( ::IsIconic(GetHwnd()) )
         {
@@ -591,6 +600,15 @@ bool wxTopLevelWindowMSW::Show(bool show)
     }
     else // hide
     {
+        // When hiding the window, remember if it was maximized or iconized in
+        // order to return the correct value from Is{Maximized,Iconized}().
+        if ( ::IsZoomed(GetHwnd()) )
+            m_showCmd = SW_MAXIMIZE;
+        else if ( ::IsIconic(GetHwnd()) )
+            m_showCmd = SW_MINIMIZE;
+        else
+            m_showCmd = SW_SHOW;
+
         nShowCmd = SW_HIDE;
     }
 
@@ -608,6 +626,16 @@ bool wxTopLevelWindowMSW::Show(bool show)
 
     DoShowWindow(nShowCmd);
 
+    if ( show && nShowCmd == SW_MAXIMIZE )
+    {
+        // We don't receive WM_SHOWWINDOW when shown in the maximized state,
+        // cf. https://docs.microsoft.com/en-us/windows/desktop/winmsg/wm-showwindow
+        // and so we have to issue the event ourselves in this case.
+        wxShowEvent event(GetId(), true);
+        event.SetEventObject(this);
+        AddPendingEvent(event);
+    }
+
     return true;
 }
 
@@ -622,16 +650,19 @@ void wxTopLevelWindowMSW::Raise()
 
 void wxTopLevelWindowMSW::Maximize(bool maximize)
 {
+    // Update m_showCmd to ensure that the window is maximized when it's shown
+    // later even if it's currently hidden.
+    m_showCmd = maximize ? SW_MAXIMIZE : SW_RESTORE;
+
     if ( IsShown() )
     {
         // just maximize it directly
-        DoShowWindow(maximize ? SW_MAXIMIZE : SW_RESTORE);
+        DoShowWindow(m_showCmd);
     }
     else // hidden
     {
         // we can't maximize the hidden frame because it shows it as well,
-        // so just remember that we should do it later in this case
-        m_maximizeOnShow = maximize;
+        // so don't do anything other than updating m_showCmd for now
 
 #if wxUSE_DEFERRED_SIZING
         // after calling Maximize() the client code expects to get the frame
@@ -657,48 +688,90 @@ void wxTopLevelWindowMSW::Maximize(bool maximize)
 
 bool wxTopLevelWindowMSW::IsMaximized() const
 {
-    return IsAlwaysMaximized() ||
-           (::IsZoomed(GetHwnd()) != 0) ||
-           m_maximizeOnShow;
+    if ( IsAlwaysMaximized() )
+        return true;
+
+    // If the window is shown, just ask Windows if it's maximized. But hidden
+    // windows are not really maximized, even after Maximize() is called on
+    // them, so for them we check if we're scheduled to maximize the window
+    // when it's shown instead.
+    return IsShown() ? ::IsZoomed(GetHwnd()) != 0 : m_showCmd == SW_MAXIMIZE;
 }
 
 void wxTopLevelWindowMSW::Iconize(bool iconize)
 {
-    if ( iconize == m_iconized )
+    if ( iconize == MSWIsIconized() )
     {
         // Do nothing, in particular don't restore non-iconized windows when
         // Iconize(false) is called as this would wrongly un-maximize them.
         return;
     }
 
+    // Note that we can't change m_showCmd yet as wxFrame WM_SIZE handler uses
+    // its value to determine whether the frame had been iconized before or not
+    // and this handler will be called from inside DoShowWindow() below.
+    const UINT showCmd = iconize ? SW_MINIMIZE : SW_RESTORE;
+
+    // We can't actually iconize the window if it's currently hidden, as this
+    // would also show it unexpectedly.
     if ( IsShown() )
     {
-        // change the window state immediately
-        DoShowWindow(iconize ? SW_MINIMIZE : SW_RESTORE);
+        DoShowWindow(showCmd);
     }
-    else // hidden
-    {
-        // iconizing the window shouldn't show it so just update the internal
-        // state (otherwise it's done by DoShowWindow() itself)
-        m_iconized = iconize;
-    }
+
+    // Update the internal flag in any case, so that IsIconized() returns the
+    // correct value, for example. And if the window is currently hidden, this
+    // also ensures that the next call to Show() will show it in an iconized
+    // state instead of showing it normally.
+    m_showCmd = showCmd;
 }
 
 bool wxTopLevelWindowMSW::IsIconized() const
 {
     if ( !IsShown() )
-        return m_iconized;
+    {
+        // Hidden windows are never actually iconized at MSW level, but can be
+        // in wx, so use m_showCmd to determine our status.
+        return m_showCmd == SW_MINIMIZE;
+    }
 
-    // don't use m_iconized, it may be briefly out of sync with the real state
+    // don't use m_showCmd, it may be briefly out of sync with the real state
     // as it's only modified when we receive a WM_SIZE and we could be called
     // from an event handler from one of the messages we receive before it,
     // such as WM_MOVE
+    return MSWIsIconized();
+}
+
+bool wxTopLevelWindowMSW::MSWIsIconized() const
+{
     return ::IsIconic(GetHwnd()) != 0;
 }
 
 void wxTopLevelWindowMSW::Restore()
 {
+    // Forget any previous minimized/maximized status.
+    m_showCmd = SW_SHOW;
+
+    // And actually restore the window to its normal state. Note that here,
+    // unlike in Maximize() and Iconize(), we do it even if the window is
+    // currently hidden, i.e. Restore() is supposed to show it in this case.
     DoShowWindow(SW_RESTORE);
+}
+
+bool wxTopLevelWindowMSW::Destroy()
+{
+    if ( !wxTopLevelWindowBase::Destroy() )
+        return false;
+
+    // Under Windows 10 iconized windows don't get any messages, so delayed
+    // destruction doesn't work for them if we don't force a message dispatch
+    // here (and it doesn't seem useful to test for MSWIsIconized() as doing
+    // this doesn't do any harm for non-iconized windows neither). For that
+    // matter, doing this shouldn't do any harm under previous OS versions
+    // neither, so checking for the OS version doesn't seem useful too.
+    wxWakeUpIdle();
+
+    return true;
 }
 
 void wxTopLevelWindowMSW::SetLayoutDirection(wxLayoutDirection dir)
@@ -730,8 +803,7 @@ void wxTopLevelWindowMSW::DoGetPosition(int *x, int *y) const
             {
                 // we must use the correct display for the translation as the
                 // task bar might be shown on one display but not the other one
-                int n = wxDisplay::GetFromWindow(this);
-                wxDisplay dpy(n == wxNOT_FOUND ? 0 : n);
+                wxDisplay dpy(this);
                 const wxPoint ptOfs = dpy.GetClientArea().GetPosition() -
                                       dpy.GetGeometry().GetPosition();
 
@@ -888,20 +960,9 @@ bool wxTopLevelWindowMSW::ShowFullScreen(bool show, long style)
         // change our window style to be compatible with full-screen mode
         updateStyle.Apply();
 
-        wxRect rect;
-#if wxUSE_DISPLAY
-        // resize to the size of the display containing us
-        int dpy = wxDisplay::GetFromWindow(this);
-        if ( dpy != wxNOT_FOUND )
-        {
-            rect = wxDisplay(dpy).GetGeometry();
-        }
-        else // fall back to the main desktop
-#endif // wxUSE_DISPLAY
-        {
-            // resize to the size of the desktop
-            wxCopyRECTToRect(wxGetWindowRect(::GetDesktopWindow()), rect);
-        }
+        // resize to the size of the display containing us, falling back to the
+        // primary one
+        const wxRect rect = wxDisplay(this).GetGeometry();
 
         SetSize(rect);
 
@@ -960,7 +1021,7 @@ bool wxTopLevelWindowMSW::DoSelectAndSetIcon(const wxIconBundle& icons,
                                              int smY,
                                              int i)
 {
-    const wxSize size(::GetSystemMetrics(smX), ::GetSystemMetrics(smY));
+    const wxSize size(wxGetSystemMetrics(smX, this), wxGetSystemMetrics(smY, this));
 
     wxIcon icon = icons.GetIcon(size, wxIconBundle::FALLBACK_NEAREST_LARGER);
 
@@ -1181,7 +1242,7 @@ void wxTopLevelWindowMSW::DoThaw()
 
 void wxTopLevelWindowMSW::DoSaveLastFocus()
 {
-    if ( m_iconized )
+    if ( MSWIsIconized() )
         return;
 
     // remember the last focused child if it is our child
@@ -1211,7 +1272,7 @@ void wxTopLevelWindowMSW::OnActivate(wxActivateEvent& event)
         // We get WM_ACTIVATE before being restored from iconized state, so we
         // can be still iconized here. In this case, avoid restoring the focus
         // as it doesn't work anyhow and we will do when we're really restored.
-        if ( m_iconized )
+        if ( MSWIsIconized() )
         {
             event.Skip();
             return;
@@ -1242,7 +1303,7 @@ void wxTopLevelWindowMSW::OnActivate(wxActivateEvent& event)
 }
 
 // the DialogProc for all wxWidgets dialogs
-LONG APIENTRY
+INT_PTR APIENTRY
 wxDlgProc(HWND WXUNUSED(hDlg),
           UINT message,
           WPARAM WXUNUSED(wParam),

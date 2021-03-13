@@ -8,10 +8,6 @@
 
 #include "testprec.h"
 
-#ifdef __BORLANDC__
-#   pragma hdrstop
-#endif
-
 #ifndef WX_PRECOMP
 #   include "wx/wx.h"
 #endif
@@ -25,7 +21,7 @@ using std::string;
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// Tar suite 
+// Tar suite
 
 class tartest : public ArchiveTestSuite
 {
@@ -38,7 +34,7 @@ protected:
     CppUnit::Test *makeTest(string descr, int options,
                             bool genericInterface,
                             const wxString& archiver,
-                            const wxString& unarchiver);
+                            const wxString& unarchiver) wxOVERRIDE;
 };
 
 tartest::tartest()

@@ -19,9 +19,6 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #include "wx/evtloop.h"
 
@@ -282,6 +279,27 @@ void wxCFEventLoop::OSXDoRun()
                 ;
 
             break;
+        }
+
+        // Process the remaining queued messages, both at the level of the
+        // underlying toolkit level (Pending/Dispatch()) and wx level
+        // (Has/ProcessPendingEvents()).
+        //
+        // We do run the risk of never exiting this loop if pending event
+        // handlers endlessly generate new events but they shouldn't do
+        // this in a well-behaved program and we shouldn't just discard the
+        // events we already have, they might be important.
+        for ( ;; )
+        {
+            bool hasMoreEvents = false;
+            if ( wxTheApp && wxTheApp->HasPendingEvents() )
+            {
+                wxTheApp->ProcessPendingEvents();
+                hasMoreEvents = true;
+            }
+
+            if ( !hasMoreEvents )
+                break;
         }
     }
 }

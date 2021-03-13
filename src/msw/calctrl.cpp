@@ -17,9 +17,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_CALENDARCTRL
 
@@ -122,10 +119,8 @@ wxCalendarCtrl::Create(wxWindow *parent,
     SetHolidayAttrs();
     UpdateMarks();
 
-    Connect(wxEVT_LEFT_DOWN,
-            wxMouseEventHandler(wxCalendarCtrl::MSWOnClick));
-    Connect(wxEVT_LEFT_DCLICK,
-            wxMouseEventHandler(wxCalendarCtrl::MSWOnDoubleClick));
+    Bind(wxEVT_LEFT_DOWN, &wxCalendarCtrl::MSWOnClick, this);
+    Bind(wxEVT_LEFT_DCLICK, &wxCalendarCtrl::MSWOnDoubleClick, this);
 
     return true;
 }
@@ -198,7 +193,7 @@ wxCalendarCtrl::HitTest(const wxPoint& pos,
         default:
         case MCHT_CALENDARWEEKNUM:
             wxFAIL_MSG( "unexpected" );
-            // fall through
+            wxFALLTHROUGH;
 
         case MCHT_NOWHERE:
         case MCHT_CALENDARBK:

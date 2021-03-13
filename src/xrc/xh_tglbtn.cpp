@@ -10,9 +10,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_XRC && wxUSE_TOGGLEBTN
 
@@ -89,7 +86,7 @@ void wxToggleButtonXmlHandler::DoCreateToggleButton(wxObject *control)
                           GetDirection("bitmapposition"));
     }
 #endif
-   
+
     button->SetValue(GetBool( wxT("checked")));
 }
 

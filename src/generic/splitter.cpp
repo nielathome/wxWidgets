@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_SPLITTER
 
@@ -101,7 +98,7 @@ bool wxSplitterWindow::Create(wxWindow *parent, wxWindowID id,
 #if !defined(__WXGTK__) || defined(__WXGTK20__)
     // don't erase the splitter background, it's pointless as we overwrite it
     // anyhow
-    SetBackgroundStyle(wxBG_STYLE_CUSTOM);
+    SetBackgroundStyle(wxBG_STYLE_PAINT);
 #endif
 
     return true;
@@ -120,7 +117,6 @@ void wxSplitterWindow::Init()
     m_sashPosition = 0;
     m_requestedSashPosition = INT_MAX;
     m_sashGravity = 0.0;
-    m_lastSize = wxSize(0,0);
     m_minimumPaneSize = 0;
     m_sashCursorWE = wxCursor(wxCURSOR_SIZEWE);
     m_sashCursorNS = wxCursor(wxCURSOR_SIZENS);

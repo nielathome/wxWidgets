@@ -334,8 +334,8 @@ void wxOSXIPhoneClassAddWXMethods(Class c)
 
 wxIMPLEMENT_DYNAMIC_CLASS(wxWidgetIPhoneImpl , wxWidgetImpl);
 
-wxWidgetIPhoneImpl::wxWidgetIPhoneImpl( wxWindowMac* peer , WXWidget w, bool isRootControl, bool isUserPane ) :
-    wxWidgetImpl( peer, isRootControl, isUserPane ), m_osxView(w)
+wxWidgetIPhoneImpl::wxWidgetIPhoneImpl( wxWindowMac* peer , WXWidget w, int flags ) :
+    wxWidgetImpl( peer, flags ), m_osxView(w)
 {
 }
 
@@ -642,10 +642,6 @@ void wxWidgetIPhoneImpl::InstallEventHandler( WXWidget control )
 void wxWidgetIPhoneImpl::DoNotifyFocusEvent(bool receivedFocus, wxWidgetImpl* otherWindow)
 {
     wxWindow* thisWindow = GetWXPeer();
-    if ( thisWindow->MacGetTopLevelWindow() && NeedsFocusRect() )
-    {
-        thisWindow->MacInvalidateBorders();
-    }
 
     if ( receivedFocus )
     {
@@ -821,7 +817,7 @@ wxWidgetImpl* wxWidgetImpl::CreateUserPane( wxWindowMac* wxpeer, wxWindowMac* WX
     sv.clipsToBounds = YES;
     sv.contentMode =  UIViewContentModeRedraw;
     sv.clearsContextBeforeDrawing = NO;
-    wxWidgetIPhoneImpl* c = new wxWidgetIPhoneImpl( wxpeer, v, false, true );
+    wxWidgetIPhoneImpl* c = new wxWidgetIPhoneImpl( wxpeer, v, Widget_IsUserPane );
     return c;
 }
 

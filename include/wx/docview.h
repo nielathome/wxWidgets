@@ -691,7 +691,7 @@ public:
                        const wxPoint& pos = wxDefaultPosition,
                        const wxSize& size = wxDefaultSize,
                        long style = wxDEFAULT_FRAME_STYLE,
-                       const wxString& name = wxFrameNameStr)
+                       const wxString& name = wxASCII_STR(wxFrameNameStr))
     {
         Create(doc, view, parent, id, title, pos, size, style, name);
     }
@@ -704,7 +704,7 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
                 long style = wxDEFAULT_FRAME_STYLE,
-                const wxString& name = wxFrameNameStr)
+                const wxString& name = wxASCII_STR(wxFrameNameStr))
     {
         if ( !wxDocChildFrameAnyBase::Create(doc, view, this) )
             return false;
@@ -712,10 +712,8 @@ public:
         if ( !BaseClass::Create(parent, id, title, pos, size, style, name) )
             return false;
 
-        this->Connect(wxEVT_ACTIVATE,
-                      wxActivateEventHandler(wxDocChildFrameAny::OnActivate));
-        this->Connect(wxEVT_CLOSE_WINDOW,
-                      wxCloseEventHandler(wxDocChildFrameAny::OnCloseWindow));
+        this->Bind(wxEVT_ACTIVATE, &wxDocChildFrameAny::OnActivate, this);
+        this->Bind(wxEVT_CLOSE_WINDOW, &wxDocChildFrameAny::OnCloseWindow, this);
 
         return true;
     }
@@ -739,7 +737,7 @@ private:
     void OnCloseWindow(wxCloseEvent& event)
     {
         if ( CloseView(event) )
-            BaseClass::Destroy();
+            this->Destroy();
         //else: vetoed
     }
 
@@ -769,7 +767,7 @@ public:
                     const wxPoint& pos = wxDefaultPosition,
                     const wxSize& size = wxDefaultSize,
                     long style = wxDEFAULT_FRAME_STYLE,
-                    const wxString& name = wxFrameNameStr)
+                    const wxString& name = wxASCII_STR(wxFrameNameStr))
         : wxDocChildFrameBase(doc, view,
                               parent, id, title, pos, size, style, name)
     {
@@ -783,7 +781,7 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
                 long style = wxDEFAULT_FRAME_STYLE,
-                const wxString& name = wxFrameNameStr)
+                const wxString& name = wxASCII_STR(wxFrameNameStr))
     {
         return wxDocChildFrameBase::Create
                (
@@ -847,7 +845,7 @@ public:
                         const wxPoint& pos = wxDefaultPosition,
                         const wxSize& size = wxDefaultSize,
                         long style = wxDEFAULT_FRAME_STYLE,
-                        const wxString& name = wxFrameNameStr)
+                        const wxString& name = wxASCII_STR(wxFrameNameStr))
         : wxDocParentFrameAnyBase(this)
     {
         Create(manager, frame, id, title, pos, size, style, name);
@@ -860,17 +858,15 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
                 long style = wxDEFAULT_FRAME_STYLE,
-                const wxString& name = wxFrameNameStr)
+                const wxString& name = wxASCII_STR(wxFrameNameStr))
     {
         m_docManager = manager;
 
         if ( !BaseFrame::Create(frame, id, title, pos, size, style, name) )
             return false;
 
-        this->Connect(wxID_EXIT, wxEVT_MENU,
-                      wxCommandEventHandler(wxDocParentFrameAny::OnExit));
-        this->Connect(wxEVT_CLOSE_WINDOW,
-                      wxCloseEventHandler(wxDocParentFrameAny::OnCloseWindow));
+        this->Bind(wxEVT_MENU, &wxDocParentFrameAny::OnExit, this, wxID_EXIT);
+        this->Bind(wxEVT_CLOSE_WINDOW, &wxDocParentFrameAny::OnCloseWindow, this);
 
         return true;
     }
@@ -924,7 +920,7 @@ public:
                      const wxPoint& pos = wxDefaultPosition,
                      const wxSize& size = wxDefaultSize,
                      long style = wxDEFAULT_FRAME_STYLE,
-                     const wxString& name = wxFrameNameStr)
+                     const wxString& name = wxASCII_STR(wxFrameNameStr))
         : wxDocParentFrameBase(manager,
                                parent, id, title, pos, size, style, name)
     {
@@ -937,7 +933,7 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
                 long style = wxDEFAULT_FRAME_STYLE,
-                const wxString& name = wxFrameNameStr)
+                const wxString& name = wxASCII_STR(wxFrameNameStr))
     {
         return wxDocParentFrameBase::Create(manager,
                                             parent, id, title,

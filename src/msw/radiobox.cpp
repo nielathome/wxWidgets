@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_RADIOBOX
 
@@ -113,7 +110,7 @@ namespace
 {
 
 // the pointer to standard radio button wnd proc
-WXFARPROC s_wndprocRadioBtn = (WXFARPROC)NULL;
+WXWNDPROC s_wndprocRadioBtn = NULL;
 
 // Hash allowing to find wxRadioBox containing the given radio button by its
 // HWND. This is used by (subclassed) radio button window proc to find the
@@ -298,7 +295,7 @@ void wxRadioBox::SubclassRadioButton(WXHWND hWndBtn)
     HWND hwndBtn = (HWND)hWndBtn;
 
     if ( !s_wndprocRadioBtn )
-        s_wndprocRadioBtn = (WXFARPROC)wxGetWindowProc(hwndBtn);
+        s_wndprocRadioBtn = wxGetWindowProc(hwndBtn);
 
     wxSetWindowProc(hwndBtn, wxRadioBtnWndProc);
 
@@ -586,10 +583,9 @@ wxSize wxRadioBox::GetTotalButtonSize(const wxSize& sizeBtn) const
             reinterpret_cast<wxWindow*>(const_cast<wxRadioBox*>(this))).y / 2;
 
     // and also wide enough for its label
-    int widthLabel;
-    GetTextExtent(GetLabelText(), &widthLabel, NULL);
-    if ( widthLabel > width )
-        width = widthLabel;
+    int widthBox = wxStaticBox::DoGetBestSize().x;
+    if ( widthBox > width )
+        width = widthBox;
 
     return wxSize(width, height);
 }
@@ -750,6 +746,14 @@ int wxRadioBox::GetItemFromPoint(const wxPoint& pt) const
     }
 
     return wxNOT_FOUND;
+}
+
+void wxRadioBox::MSWUpdateFontOnDPIChange(const wxSize& newDPI)
+{
+    wxStaticBox::MSWUpdateFontOnDPIChange(newDPI);
+
+    if ( m_font.IsOk() )
+        m_radioButtons->SetFont(m_font);
 }
 
 // ----------------------------------------------------------------------------

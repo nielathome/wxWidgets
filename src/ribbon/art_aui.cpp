@@ -10,9 +10,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_RIBBON
 
@@ -38,7 +35,7 @@ wxRibbonAUIArtProvider::wxRibbonAUIArtProvider()
     : wxRibbonMSWArtProvider(false)
 {
 #if defined( __WXMAC__ ) && wxOSX_USE_COCOA_OR_CARBON
-    wxColor base_colour = wxColour( wxMacCreateCGColorFromHITheme(kThemeBrushToolbarBackground));
+    wxColor base_colour = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
 #else
     wxColor base_colour = wxSystemSettings::GetColour(wxSYS_COLOUR_3DFACE);
 #endif
@@ -231,8 +228,8 @@ void wxRibbonAUIArtProvider::SetColourScheme(
     wxRibbonHSLColour tertiary_hsl(tertiary);
 
     // Map primary & secondary luminance from [0, 1] to [0.15, 0.85]
-    primary_hsl.luminance = float(cos(primary_hsl.luminance * M_PI) * -0.35 + 0.5);
-    secondary_hsl.luminance = float(cos(secondary_hsl.luminance * M_PI) * -0.35 + 0.5);
+    primary_hsl.luminance   = std::cos(primary_hsl.luminance   * float(M_PI)) * -0.35f + 0.5f;
+    secondary_hsl.luminance = std::cos(secondary_hsl.luminance * float(M_PI)) * -0.35f + 0.5f;
 
     // TODO: Remove next line once this provider stops piggybacking MSW
     wxRibbonMSWArtProvider::SetColourScheme(primary, secondary, tertiary);
@@ -243,14 +240,32 @@ void wxRibbonAUIArtProvider::SetColourScheme(
     wxRibbonShiftLuminance(secondary_hsl, luminance ## f).ToRGB()
 
     m_tab_ctrl_background_colour = LikePrimary(0.9);
+#ifdef __WXMAC__
+    m_tab_ctrl_background_gradient_colour = m_tab_ctrl_background_colour;
+#else
     m_tab_ctrl_background_gradient_colour = LikePrimary(1.7);
+#endif
     m_tab_border_pen = LikePrimary(0.75);
+#ifdef __WXMAC__
+    m_tab_label_colour = wxSystemSettings::GetColour(wxSYS_COLOUR_CAPTIONTEXT);
+#else
     m_tab_label_colour = LikePrimary(0.1);
+#endif
+    m_tab_active_label_colour = m_tab_label_colour;
+    m_tab_hover_label_colour = m_tab_label_colour;
     m_tab_hover_background_top_colour =  primary_hsl.ToRGB();
+#ifdef __WXMAC__
+    m_tab_hover_background_top_gradient_colour = m_tab_hover_background_top_colour;
+#else
     m_tab_hover_background_top_gradient_colour = LikePrimary(1.6);
+#endif
     m_tab_hover_background_brush = m_tab_hover_background_top_colour;
     m_tab_active_background_colour = m_tab_ctrl_background_gradient_colour;
+#ifdef __WXMAC__
+    m_tab_active_background_gradient_colour = m_tab_active_background_colour;
+#else
     m_tab_active_background_gradient_colour = primary_hsl.ToRGB();
+#endif
     m_tab_active_top_background_brush = m_tab_active_background_colour;
     m_panel_label_colour = m_tab_label_colour;
     m_panel_minimised_label_colour = m_panel_label_colour;
@@ -268,7 +283,11 @@ void wxRibbonAUIArtProvider::SetColourScheme(
     m_button_bar_hover_background_brush = LikeSecondary(1.7);
     m_button_bar_active_background_brush = LikeSecondary(1.4);
     m_button_bar_label_colour = m_tab_label_colour;
+#ifdef __WXMAC__
+    m_button_bar_label_disabled_colour = wxSystemSettings::GetColour(wxSYS_COLOUR_INACTIVECAPTIONTEXT);
+#else
     m_button_bar_label_disabled_colour = m_tab_label_colour;
+#endif
     m_gallery_border_pen = m_tab_border_pen;
     m_gallery_item_border_pen = m_button_bar_hover_border_pen;
     m_gallery_hover_background_brush = LikePrimary(1.2);
@@ -447,8 +466,20 @@ void wxRibbonAUIArtProvider::DrawTab(wxDC& dc,
         wxString label = tab.page->GetLabel();
         if(!label.IsEmpty())
         {
-            dc.SetTextForeground(m_tab_label_colour);
-            dc.SetBackgroundMode(wxTRANSPARENT);
+            if (tab.active)
+            {
+                dc.SetTextForeground(m_tab_active_label_colour);
+            }
+            else if (tab.hovered)
+            {
+                dc.SetTextForeground(m_tab_hover_label_colour);
+            }
+            else
+            {
+                dc.SetTextForeground(m_tab_label_colour);
+            }
+
+            dc.SetBackgroundMode(wxBRUSHSTYLE_TRANSPARENT);
 
             int offset = 0;
             if(icon.IsOk())

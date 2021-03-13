@@ -16,9 +16,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/string.h"
@@ -207,12 +204,14 @@ wxSTD ostream& operator<<(wxSTD ostream& os, const wxScopedCharBuffer& str)
     return os << str.data();
 }
 
-#ifndef __BORLANDC__
 wxSTD ostream& operator<<(wxSTD ostream& os, const wxScopedWCharBuffer& str)
 {
-    return os << str.data();
+    // There is no way to write wide character data to std::ostream directly,
+    // but we need to define this operator for compatibility, as we provided it
+    // since basically always, even if it never worked correctly before. So do
+    // the only reasonable thing and output it as UTF-8.
+    return os << wxConvWhateverWorks.cWC2MB(str.data());
 }
-#endif
 
 #if wxUSE_UNICODE && defined(HAVE_WOSTREAM)
 
@@ -555,7 +554,7 @@ bool wxString::Shrink()
 {
   wxString tmp(begin(), end());
   swap(tmp);
-  return tmp.length() == length();
+  return true;
 }
 
 // deprecated compatibility code:

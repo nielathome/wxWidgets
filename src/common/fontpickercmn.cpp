@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_FONTPICKERCTRL
 
@@ -74,9 +71,7 @@ bool wxFontPickerCtrl::Create( wxWindow *parent, wxWindowID id,
     // complete sizer creation
     wxPickerBase::PostCreation();
 
-    m_picker->Connect(wxEVT_FONTPICKER_CHANGED,
-            wxFontPickerEventHandler(wxFontPickerCtrl::OnFontChange),
-            NULL, this);
+    m_picker->Bind(wxEVT_FONTPICKER_CHANGED, &wxFontPickerCtrl::OnFontChange, this);
 
     return true;
 }
